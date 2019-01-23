@@ -1,0 +1,15 @@
+condense_wildcard_suffixes = true
+control_brace_style = "ClosingNextLine"
+format_strings = true
+format_macro_matchers = true
+merge_imports = true
+normalize_comments = true
+reorder_impl_items = true
+trailing_comma = "Never"
+use_field_init_shorthand = true
+use_try_shorthand = true
+format_doc_comments = true
+wrap_comments = true
+overflow_delimited_expr = true
+unstable_features = true
+normalize_doc_attributes = true

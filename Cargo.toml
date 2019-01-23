@@ -1,0 +1,13 @@
+[package]
+name = "watchd"
+version = "0.1.0"
+authors = ["Davide Casella <davide@comedia.it>"]
+edition = "2018"
+
+[dependencies]
+clap = "2"
+notify = "4"
+regex = "1"
+serde = "1"
+serde_derive = "1"
+toml = "0.4"
