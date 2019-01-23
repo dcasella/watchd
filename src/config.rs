@@ -8,7 +8,7 @@ pub struct Config {
     pub init: bool,
     pub verbose: bool,
     pub dry_run: bool,
-    pub entries: Vec<Entry>
+    pub entries: Vec<Entry>,
 }
 
 #[derive(Debug)]
@@ -16,8 +16,8 @@ pub struct Entry {
     pub path: PathBuf,
     pub recursive: bool,
     pub interval: f64,
-    pub exclude: Vec<Regex>,
-    pub command: Vec<String>
+    pub excludes: Vec<Regex>,
+    pub commands: Vec<String>,
 }
 
 impl Config {
@@ -57,7 +57,7 @@ impl Default for Config {
             init: false,
             verbose: false,
             dry_run: false,
-            entries: Vec::new()
+            entries: Vec::new(),
         }
     }
 }
@@ -68,8 +68,8 @@ impl Default for Entry {
             path: PathBuf::default(),
             recursive: false,
             interval: 0.0,
-            exclude: Vec::new(),
-            command: Vec::new()
+            excludes: Vec::new(),
+            commands: Vec::new(),
         }
     }
 }
@@ -82,7 +82,7 @@ struct ConfigFromToml {
     #[serde(rename = "dry-run")]
     dry_run: Option<bool>,
     #[serde(rename = "entry")]
-    entries: Vec<EntryFromToml>
+    entries: Vec<EntryFromToml>,
 }
 
 // configuration entry struct for TOML parsing (optional values and
@@ -92,10 +92,10 @@ struct EntryFromToml {
     path: PathBuf,
     recursive: Option<bool>,
     interval: Option<f64>,
-    #[serde(alias = "excludes")]
-    exclude: Option<Vec<String>>,
-    #[serde(alias = "commands")]
-    command: Vec<String>
+    #[serde(alias = "exclude")]
+    excludes: Option<Vec<String>>,
+    #[serde(alias = "command")]
+    commands: Vec<String>,
 }
 
 impl Entry {
@@ -105,8 +105,7 @@ impl Entry {
         // retrieve path from entry_toml
         if entry_toml.path.exists() {
             entry.path = entry_toml.path.clone();
-        }
-        else {
+        } else {
             panic!("No such file or directory {:#?}", entry_toml.path);
         }
 
@@ -115,8 +114,8 @@ impl Entry {
             entry.recursive = value;
         }
 
-        // retrieve command from entry_toml
-        entry.command = entry_toml.command.clone();
+        // retrieve commands from entry_toml
+        entry.commands = entry_toml.commands.clone();
 
         // if entry_toml.interval is set, retrieve it
         if let Some(value) = entry_toml.interval {
@@ -124,12 +123,12 @@ impl Entry {
         }
 
         // if entry_toml.exclude is set, retrieve it
-        if let Some(expressions) = entry_toml.exclude.clone() {
+        if let Some(expressions) = entry_toml.excludes.clone() {
             // convert each string expression in a regex
             for expr in expressions {
-                entry.exclude.push(
+                entry.excludes.push(
                     Regex::new(&expr)
-                        .unwrap_or_else(|_| panic!("Could not parse RegExp {:#?}", expr))
+                        .unwrap_or_else(|_| panic!("Could not parse RegExp {:#?}", expr)),
                 );
             }
         }

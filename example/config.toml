@@ -1,18 +1,19 @@
 init = true
 verbose = true
-dry-run = true
 
-[[entry]]
-path = "."
-interval = 5
-exclude = ["^.*\\.sw(?:p|x|px)$"]
-command = [
-	"echo 'we' >> logfile1.log",
-	"echo 'we' >> logfile2.log"
-]
+# [[entry]]
+# path = "."
+# interval = 5
+# exclude = ["^.*\\.sw(?:p|x|px)$"]
+# command = [
+# 	"echo \"term: $TERM\" >> example/logfile.log"
+# ]
 
 [[entry]]
 path = "example"
 recursive = true
 interval = 30
-command = ["echo haha"]
+command = [
+    "echo wela",
+    # "cat example/logfile.log"
+]

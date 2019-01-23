@@ -5,41 +5,20 @@ mod cli;
 mod config;
 mod monitor;
 
+use std::thread::sleep;
+use std::time::Duration;
+
 use config::Config;
-use monitor::{Monitor, OnEvent};
-
-struct Watcher {
-    monitor: Monitor,
-    handler: Handler
-}
-
-struct Handler {}
-
-impl Handler {
-    fn new() -> Self {
-        Self {}
-    }
-}
-
-impl OnEvent for Handler {
-    fn on_event(&mut self) {}
-}
 
 fn main() {
     let config = Config::from(&cli::Options::load());
 
-    // monitor entries
-    let monitors = Vec::new();
-
     for entry in config.entries {
-        let mut handler = Handler::new();
-
-        monitors.push(Watcher {
-            monitor: Monitor::new(&entry, &mut handler),
-            handler
-        });
+        monitor::spawn(entry, config.init, config.dry_run, config.verbose);
     }
 
     // main loop
-    loop {}
+    loop {
+        sleep(Duration::from_secs(60));
+    }
 }
