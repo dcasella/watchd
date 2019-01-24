@@ -9,11 +9,24 @@ mod cli;
 mod config;
 mod handler;
 mod logger;
+mod signal;
 mod watcher;
 
-use std::{sync::mpsc, thread::sleep, time::Duration};
+use std::{error::Error, sync::mpsc};
 
-fn main() {
+fn main() -> Result<(), Box<Error>> {
+    info!(
+        logger::ROOT, "PROGRAM";
+        "status" => "started"
+    );
+
+    self::boot();
+
+    // signal handling
+    signal::select()
+}
+
+fn boot() {
     if config::OPTS.verbose {
         info!(
             logger::ROOT, "BOOT";
@@ -37,10 +50,5 @@ fn main() {
             "watchers" => "started",
             "handlers" => "started"
         );
-    }
-
-    // main loop
-    loop {
-        sleep(Duration::from_secs(60));
     }
 }

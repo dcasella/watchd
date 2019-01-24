@@ -6,11 +6,13 @@ edition = "2018"
 
 [dependencies]
 clap = "2"
+crossbeam-channel = "0.3"
 lazy_static = "1.2"
 notify = "4"
 regex = "1"
 serde = "1"
 serde_derive = "1"
+signal-hook = "0.1"
 slog = "2.4"
 slog-async = "2.3"
 slog-scope = "4.1"
