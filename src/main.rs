@@ -12,8 +12,6 @@ mod monitor;
 
 use std::{thread::sleep, time::Duration};
 
-static DEFAULT_CONFIG_PATH: &str = "/etc/watchd/config.toml";
-
 fn main() {
     if config::OPTS.verbose {
         info!(logger::ROOT, "starting watchers");

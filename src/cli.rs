@@ -1,6 +1,8 @@
 use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg};
 use std::path::PathBuf;
 
+static DEFAULT_CONFIG_FILE: &str = "/etc/watchd/config.toml";
+
 pub struct Options {
     pub config_file: PathBuf,
     pub log_file: Option<PathBuf>,
@@ -19,7 +21,7 @@ impl Options {
                     .help("Specify configuration file")
                     .empty_values(false)
                     .value_name("FILE")
-                    .default_value(crate::DEFAULT_CONFIG_PATH)
+                    .default_value(self::DEFAULT_CONFIG_FILE)
             )
             .arg(
                 Arg::with_name("log-file")
