@@ -22,20 +22,22 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
                 }
             }
 
-            let mut synced = !config::OPTS.init;
+            // if `init` is true, run the command first thing in the loop
+            let mut pending_command = config::OPTS.init;
 
-            if config::OPTS.verbose && !synced {
+            if config::OPTS.verbose && pending_command {
                 info!(
                     thread_log, "INIT";
                     "sync" => true
                 );
             }
 
-            // event loop
+            // thread loop
             loop {
-                if synced {
+                if !pending_command {
                     // watch for events on `shared_rx`
                     loop {
+                        // received an event before timeout elapsed
                         if shared_rx
                             .recv_timeout(Duration::from_millis(
                                 (config::OPTS.entries[index].interval * 1000_f64) as u64
@@ -46,15 +48,21 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
                                 info!(thread_log, "EVENT");
                             }
 
-                            synced = false;
+                            // notify that a command execution is pending
+                            pending_command = true;
                         }
+                        // no event received before timeout
                         else {
+                            // break out of the watch loop:
+                            // if a command execution is pending it will be consumed, otherwise the
+                            // watch loop will resume
                             break;
                         }
                     }
                 }
 
-                if !synced {
+                if pending_command {
+                    // log the commands
                     if config::OPTS.dry_run {
                         info!(
                             thread_log, "RUN";
@@ -62,6 +70,7 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
                             "commands" => format!("{:?}", config::OPTS.entries[index].commands)
                         );
                     }
+                    // execute the commands with `sh -c ...`
                     else {
                         for command in &config::OPTS.entries[index].commands {
                             info!(
@@ -69,36 +78,12 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
                                 "command" => command
                             );
 
-                            let output = Command::new("sh")
-                                .arg("-c")
-                                .arg(&command)
-                                .output()
-                                .unwrap_or_else(|_| {
-                                    crit!(
-                                        thread_log, "RUN";
-                                        "command" => command,
-                                        "error" => true
-                                    );
-                                    panic!("error: {}", command);
-                                });
-
-                            match String::from_utf8(output.stdout) {
-                                Ok(stdout) => info!(
-                                    thread_log, "RUN";
-                                    "command" => command,
-                                    "output" => stdout.trim_end()
-                                ),
-                                Err(err) => warn!(
-                                    thread_log, "RUN";
-                                    "error" => true,
-                                    "command" => command,
-                                    "output" => err.to_string()
-                                )
-                            }
+                            let _ = Command::new("sh").arg("-c").arg(&command).spawn();
                         }
                     }
 
-                    synced = true;
+                    // notify that a command was executed
+                    pending_command = false;
                 }
             }
         })

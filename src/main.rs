@@ -22,6 +22,8 @@ fn main() {
         );
     }
 
+    // for each entry, instantiate a shared channel such that the watcher thread
+    // writes to `shared_tx` while the handler thread read from `shared_rx`
     for (i, _) in config::OPTS.entries.iter().enumerate() {
         let (shared_tx, shared_rx) = mpsc::channel();
 

@@ -28,6 +28,7 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                 )
                 .unwrap();
 
+            // instantiate thread-local logger
             let thread_log = logger::ROOT.new(o!(
                 "thread" => thread_name.clone(),
                 "id" => index
@@ -42,14 +43,17 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                 }
             }
 
+            // watch for events on `rx`
             'event_loop: loop {
                 match rx.recv() {
+                    // single file operation
                     Ok(DebouncedEvent::Create(path))
                     | Ok(DebouncedEvent::Write(path))
                     | Ok(DebouncedEvent::Chmod(path))
                     | Ok(DebouncedEvent::Remove(path)) => {
                         let path = path.to_str().expect("Could not parse path");
 
+                        // test path against excludes
                         for exclude in &config::OPTS.entries[index].excludes {
                             if exclude.is_match(path) {
                                 if config::OPTS.verbose {
@@ -61,6 +65,7 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                                     );
                                 }
 
+                                // ignore; continue to next received event
                                 continue 'event_loop;
                             }
                         }
@@ -72,12 +77,15 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                             );
                         }
 
+                        // forward event to the shared channel
                         let _ = shared_tx.send(index);
                     }
+                    // multiple file operation
                     Ok(DebouncedEvent::Rename(path_from, path_to)) => {
                         let path_from = path_from.to_str().expect("Could not parse path_from");
                         let path_to = path_to.to_str().expect("Could not parse path_to");
 
+                        // test both paths against excludes
                         for exclude in &config::OPTS.entries[index].excludes {
                             if exclude.is_match(path_from) || exclude.is_match(path_to) {
                                 if config::OPTS.verbose {
@@ -90,6 +98,7 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                                     );
                                 }
 
+                                // ignore; continue to next received event
                                 continue 'event_loop;
                             }
                         }
@@ -100,8 +109,10 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                             "path-to" => path_to
                         );
 
+                        // forward event to the shared channel
                         let _ = shared_tx.send(index);
                     }
+                    // death
                     Err(err) => {
                         error!(
                             thread_log, "EVENT";
@@ -109,8 +120,10 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                             "message" => err.to_string()
                         );
 
-                        break;
+                        // error; continue to next received event
+                        continue;
                     }
+                    // ignored operations
                     _ => {}
                 }
             }
