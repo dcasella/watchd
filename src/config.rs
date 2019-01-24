@@ -61,7 +61,7 @@ impl Entry {
                 .iter()
                 .map(|x| {
                     // compile each exclude string
-                    Regex::new(&x).unwrap_or_else(|_| panic!("Could not parse RegExp {:#?}", x))
+                    Regex::new(&x).unwrap_or_else(|_| panic!("Could not parse expression {:#?}", x))
                 })
                 .collect(),
             commands: entry_toml.commands.to_owned()
