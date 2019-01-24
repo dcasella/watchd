@@ -20,9 +20,10 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                     &entry.path,
                     if entry.recursive {
                         RecursiveMode::Recursive
-                    } else {
+                    }
+                    else {
                         RecursiveMode::NonRecursive
-                    },
+                    }
                 )
                 .unwrap();
 
@@ -43,7 +44,11 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                                     if let Some(path) = path.to_str() {
                                         if exclude.is_match(path) {
                                             if verbose {
-                                                println!("Event for {:?} ignored with exclude \"{:?}\" for {:?}", &entry.path, &exclude, &path);
+                                                println!(
+                                                    "Event for {:?} ignored with exclude \"{:?}\" \
+                                                     for {:?}",
+                                                    &entry.path, &exclude, &path
+                                                );
                                             }
 
                                             continue 'match_loop;
@@ -65,7 +70,11 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                                                 || exclude.is_match(path_to)
                                             {
                                                 if verbose {
-                                                    println!("Event for {:?} ignored with exclude \"{:?}\" on Rename from {:?} to {:?}", &entry.path, &exclude, &path_from, &path_to);
+                                                    println!(
+                                                        "Event for {:?} ignored with exclude \
+                                                         \"{:?}\" on Rename from {:?} to {:?}",
+                                                        &entry.path, &exclude, &path_from, &path_to
+                                                    );
                                                 }
 
                                                 continue 'match_loop;
@@ -75,7 +84,10 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                                 }
 
                                 if verbose {
-                                    println!("Event for {:?} from {:?} to {:?}", &entry.path, &path_from, &path_to);
+                                    println!(
+                                        "Event for {:?} from {:?} to {:?}",
+                                        &entry.path, &path_from, &path_to
+                                    );
                                 }
 
                                 synced = false;
@@ -91,16 +103,21 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                 if !synced {
                     if dry_run {
                         println!("Run command {:#?} for {:?}", &entry.commands, &entry.path);
-                    } else {
+                    }
+                    else {
                         // TODO: run entry.commands
                         for command in &entry.commands {
                             if verbose {
                                 println!("Run {:?}", &command);
                             }
 
-                            let output = Command::new("sh").arg("-c").arg(&command).output().unwrap_or_else(|_| {
-                                panic!("Run {:?} failed", &command);
-                            });
+                            let output = Command::new("sh")
+                                .arg("-c")
+                                .arg(&command)
+                                .output()
+                                .unwrap_or_else(|_| {
+                                    panic!("Run {:?} failed", &command);
+                                });
 
                             if verbose {
                                 match String::from_utf8(output.stdout) {

@@ -9,12 +9,13 @@ mod cli;
 mod config;
 mod monitor;
 
-use std::thread::sleep;
-use std::time::Duration;
+use std::{thread::sleep, time::Duration};
 
-use sloggers::terminal::{Destination, TerminalLoggerBuilder};
-use sloggers::types::Severity;
-use sloggers::Build;
+use sloggers::{
+    terminal::{Destination, TerminalLoggerBuilder},
+    types::Severity,
+    Build
+};
 
 use config::Config;
 
@@ -24,7 +25,8 @@ fn main() {
     let mut builder = TerminalLoggerBuilder::new();
     builder.level(if config.verbose {
         Severity::Trace
-    } else {
+    }
+    else {
         Severity::Warning
     });
     builder.destination(Destination::Stdout);

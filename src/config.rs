@@ -8,7 +8,7 @@ pub struct Config {
     pub init: bool,
     pub verbose: bool,
     pub dry_run: bool,
-    pub entries: Vec<Entry>,
+    pub entries: Vec<Entry>
 }
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct Entry {
     pub recursive: bool,
     pub interval: f64,
     pub excludes: Vec<Regex>,
-    pub commands: Vec<String>,
+    pub commands: Vec<String>
 }
 
 impl Config {
@@ -57,7 +57,7 @@ impl Default for Config {
             init: false,
             verbose: false,
             dry_run: false,
-            entries: Vec::new(),
+            entries: Vec::new()
         }
     }
 }
@@ -69,7 +69,7 @@ impl Default for Entry {
             recursive: false,
             interval: 0.0,
             excludes: Vec::new(),
-            commands: Vec::new(),
+            commands: Vec::new()
         }
     }
 }
@@ -82,7 +82,7 @@ struct ConfigFromToml {
     #[serde(rename = "dry-run")]
     dry_run: Option<bool>,
     #[serde(rename = "entry")]
-    entries: Vec<EntryFromToml>,
+    entries: Vec<EntryFromToml>
 }
 
 // configuration entry struct for TOML parsing (optional values and
@@ -95,7 +95,7 @@ struct EntryFromToml {
     #[serde(alias = "exclude")]
     excludes: Option<Vec<String>>,
     #[serde(alias = "command")]
-    commands: Vec<String>,
+    commands: Vec<String>
 }
 
 impl Entry {
@@ -105,7 +105,8 @@ impl Entry {
         // retrieve path from entry_toml
         if entry_toml.path.exists() {
             entry.path = entry_toml.path.clone();
-        } else {
+        }
+        else {
             panic!("No such file or directory {:#?}", entry_toml.path);
         }
 
@@ -128,7 +129,7 @@ impl Entry {
             for expr in expressions {
                 entry.excludes.push(
                     Regex::new(&expr)
-                        .unwrap_or_else(|_| panic!("Could not parse RegExp {:#?}", expr)),
+                        .unwrap_or_else(|_| panic!("Could not parse RegExp {:#?}", expr))
                 );
             }
         }

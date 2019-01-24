@@ -1,6 +1,6 @@
 use std::{
     borrow::Cow,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}
 };
 
 use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg};
@@ -11,7 +11,7 @@ pub struct Options {
     pub config: PathBuf,
     pub init: bool,
     pub verbose: bool,
-    pub dry_run: bool,
+    pub dry_run: bool
 }
 
 impl Options {
@@ -25,25 +25,25 @@ impl Options {
                     .long("config-file")
                     .help("Specify configuration file")
                     .empty_values(false)
-                    .value_name("FILE"),
+                    .value_name("FILE")
             )
             .arg(
                 Arg::with_name("init")
                     .short("i")
                     .long("init")
-                    .help("Initial synchronization process"),
+                    .help("Initial synchronization process")
             )
             .arg(
                 Arg::with_name("verbose")
                     .short("v")
                     .long("verbose")
-                    .help("Enable verbosity"),
+                    .help("Enable verbosity")
             )
             .arg(
                 Arg::with_name("dry-run")
                     .short("d")
                     .long("dry-run")
-                    .help("Print commands instead of executing them"),
+                    .help("Print commands instead of executing them")
             )
             .get_matches();
 
@@ -79,7 +79,7 @@ impl Default for Options {
             config: PathBuf::from("/etc/watchd/config.toml"),
             init: false,
             verbose: false,
-            dry_run: false,
+            dry_run: false
         }
     }
 }
