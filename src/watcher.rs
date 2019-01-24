@@ -32,7 +32,13 @@ pub fn spawn(index: usize) {
             let thread_log = logger::ROOT.new(o!("thread" => thread_name));
 
             if config::OPTS.verbose {
-                info!(thread_log, "SPAWN");
+                if let Some(path) = &config::OPTS.entries[index].path.to_str() {
+                    info!(
+                        thread_log,
+                        "SPAWN";
+                        "entry-path" => path
+                    );
+                }
             }
 
             let mut synced = !config::OPTS.init;
@@ -56,8 +62,8 @@ pub fn spawn(index: usize) {
                                                     thread_log,
                                                     "EVENT";
                                                     "exclude" => true,
-                                                    "pattern" => &exclude.as_str(),
-                                                    "path" => &path
+                                                    "pattern" => exclude.as_str(),
+                                                    "path" => path
                                                 );
                                             }
 
@@ -71,7 +77,7 @@ pub fn spawn(index: usize) {
                                         info!(
                                             thread_log,
                                             "EVENT";
-                                            "path" => &path
+                                            "path" => path
                                         );
                                     }
                                 }
@@ -90,9 +96,9 @@ pub fn spawn(index: usize) {
                                                         thread_log,
                                                         "EVENT";
                                                         "exclude" => true,
-                                                        "pattern" => &exclude.as_str(),
-                                                        "path_from" => &path_from,
-                                                        "path_to" => &path_to
+                                                        "pattern" => exclude.as_str(),
+                                                        "path-from" => path_from,
+                                                        "path-to" => path_to
                                                     );
                                                 }
 
@@ -108,8 +114,8 @@ pub fn spawn(index: usize) {
                                             info!(
                                                 thread_log,
                                                 "EVENT";
-                                                "path_from" => &path_from,
-                                                "path_to" => &path_to
+                                                "path-from" => path_from,
+                                                "path-to" => path_to
                                             );
                                         }
                                     }
@@ -138,7 +144,7 @@ pub fn spawn(index: usize) {
                         for command in &config::OPTS.entries[index].commands {
                             info!(
                                 thread_log, "RUN";
-                                "command" => &command
+                                "command" => command
                             );
 
                             let output = Command::new("sh")
@@ -146,21 +152,26 @@ pub fn spawn(index: usize) {
                                 .arg(&command)
                                 .output()
                                 .unwrap_or_else(|_| {
-                                    panic!("RUN, command: {}, error: true", &command);
+                                    crit!(
+                                        thread_log, "RUN";
+                                        "command" => command,
+                                        "error" => true
+                                    );
+                                    panic!("error: {}", command);
                                 });
 
                             match String::from_utf8(output.stdout) {
                                 Ok(stdout) => info!(
                                     thread_log,
                                     "RUN";
-                                    "command" => &command,
+                                    "command" => command,
                                     "output" => stdout.trim_end()
                                 ),
                                 Err(err) => warn!(
                                     thread_log,
                                     "RUN";
                                     "error" => true,
-                                    "command" => &command,
+                                    "command" => command,
                                     "output" => err.to_string()
                                 )
                             }

@@ -36,7 +36,7 @@ fn file_drain(log_path: &PathBuf) -> Fuse<Async> {
 fn new(log_path: &Option<PathBuf>) -> Logger {
     // always log to stdout
     let term_filter = LevelFilter::new(self::term_drain(), Level::Info);
-    let options = o!("program" => env!("CARGO_PKG_NAME"));
+    let options = o!();
 
     if let Some(log_path) = log_path {
         // duplicate logs to file in `log_path`
