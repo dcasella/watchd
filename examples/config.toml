@@ -1,11 +1,11 @@
 init = true
 
 [[entry]]
-path = "example"
+path = "examples"
 interval = 5
 exclude = ["^.*\\.sw(?:p|x|px)$"]
 command = [
-    "echo 'example'"
+    "echo 'example' >&2"
 ]
 
 [[entry]]
