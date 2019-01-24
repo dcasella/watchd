@@ -32,7 +32,7 @@ pub fn spawn(index: usize) {
             let thread_log = logger::ROOT.new(o!("thread" => thread_name));
 
             if config::OPTS.verbose {
-                info!(thread_log, "spawn");
+                info!(thread_log, "SPAWN");
             }
 
             let mut synced = !config::OPTS.init;
@@ -54,7 +54,8 @@ pub fn spawn(index: usize) {
                                             if config::OPTS.verbose {
                                                 info!(
                                                     thread_log,
-                                                    "event exclude";
+                                                    "EVENT";
+                                                    "exclude" => true,
                                                     "pattern" => &exclude.as_str(),
                                                     "path" => &path
                                                 );
@@ -69,7 +70,7 @@ pub fn spawn(index: usize) {
                                     if let Some(path) = path.to_str() {
                                         info!(
                                             thread_log,
-                                            "event";
+                                            "EVENT";
                                             "path" => &path
                                         );
                                     }
@@ -87,7 +88,8 @@ pub fn spawn(index: usize) {
                                                 if config::OPTS.verbose {
                                                     info!(
                                                         thread_log,
-                                                        "event rename exclude";
+                                                        "EVENT";
+                                                        "exclude" => true,
                                                         "pattern" => &exclude.as_str(),
                                                         "path_from" => &path_from,
                                                         "path_to" => &path_to
@@ -105,7 +107,7 @@ pub fn spawn(index: usize) {
                                         if let Some(path_to) = path_to.to_str() {
                                             info!(
                                                 thread_log,
-                                                "event rename";
+                                                "EVENT";
                                                 "path_from" => &path_from,
                                                 "path_to" => &path_to
                                             );
@@ -127,7 +129,7 @@ pub fn spawn(index: usize) {
                     if config::OPTS.dry_run {
                         info!(
                             thread_log,
-                            "run";
+                            "RUN";
                             "mode" => "dry",
                             "commands" => format!("{:?}", config::OPTS.entries[index].commands)
                         );
@@ -135,7 +137,7 @@ pub fn spawn(index: usize) {
                     else {
                         for command in &config::OPTS.entries[index].commands {
                             info!(
-                                thread_log, "run";
+                                thread_log, "RUN";
                                 "command" => &command
                             );
 
@@ -144,19 +146,19 @@ pub fn spawn(index: usize) {
                                 .arg(&command)
                                 .output()
                                 .unwrap_or_else(|_| {
-                                    panic!("run {:?} failed", &command);
+                                    panic!("RUN, command: {}, error: true", &command);
                                 });
 
                             match String::from_utf8(output.stdout) {
                                 Ok(stdout) => info!(
                                     thread_log,
-                                    "run";
+                                    "RUN";
                                     "command" => &command,
                                     "output" => stdout.trim_end()
                                 ),
                                 Err(err) => warn!(
                                     thread_log,
-                                    "run";
+                                    "RUN";
                                     "error" => true,
                                     "command" => &command,
                                     "output" => err.to_string()

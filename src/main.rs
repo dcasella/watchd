@@ -14,7 +14,7 @@ use std::{thread::sleep, time::Duration};
 
 fn main() {
     if config::OPTS.verbose {
-        info!(logger::ROOT, "starting watchers");
+        info!(logger::ROOT, "INIT"; "watchers" => "starting");
     }
 
     for (i, _) in config::OPTS.entries.iter().enumerate() {
@@ -22,7 +22,7 @@ fn main() {
     }
 
     if config::OPTS.verbose {
-        info!(logger::ROOT, "watchers ready");
+        info!(logger::ROOT, "INIT"; "watchers" => "ready");
     }
 
     // main loop
