@@ -7,9 +7,11 @@ use std::{fs::OpenOptions, path::PathBuf};
 use crate::config;
 
 lazy_static! {
+    // root logger
     pub static ref ROOT: Logger = self::new(&config::OPTS.log_file);
 }
 
+// create an asynchronous terminal drain
 fn term_drain() -> Fuse<Async> {
     let decorator = PlainDecorator::new(std::io::stdout());
     let drain = FullFormat::new(decorator).build().fuse();
@@ -17,6 +19,7 @@ fn term_drain() -> Fuse<Async> {
     Async::new(drain).build().fuse()
 }
 
+// create an asynchronous file drain for `log_path`
 fn file_drain(log_path: &PathBuf) -> Fuse<Async> {
     let file = OpenOptions::new()
         .create(true)
@@ -31,10 +34,12 @@ fn file_drain(log_path: &PathBuf) -> Fuse<Async> {
 }
 
 fn new(log_path: &Option<PathBuf>) -> Logger {
+    // always log to stdout
     let term_filter = LevelFilter::new(self::term_drain(), Level::Info);
     let options = o!("program" => env!("CARGO_PKG_NAME"));
 
     if let Some(log_path) = log_path {
+        // duplicate logs to file in `log_path`
         Logger::root(
             Duplicate::new(
                 term_filter,

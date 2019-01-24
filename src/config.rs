@@ -3,6 +3,7 @@ use regex::Regex;
 use std::path::PathBuf;
 
 lazy_static! {
+    // configuration options
     pub static ref OPTS: Config = Config::from(cli::Options::load());
 }
 
