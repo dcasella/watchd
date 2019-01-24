@@ -1,7 +1,10 @@
+use crate::cli;
 use regex::Regex;
 use std::path::PathBuf;
 
-// public
+lazy_static! {
+    pub static ref OPTS: Config = Config::from(&cli::Options::load());
+}
 
 #[derive(Debug)]
 pub struct Config {
@@ -9,15 +12,6 @@ pub struct Config {
     pub verbose: bool,
     pub dry_run: bool,
     pub entries: Vec<Entry>
-}
-
-#[derive(Debug)]
-pub struct Entry {
-    pub path: PathBuf,
-    pub recursive: bool,
-    pub interval: f64,
-    pub excludes: Vec<Regex>,
-    pub commands: Vec<String>
 }
 
 impl Config {
@@ -49,8 +43,6 @@ impl Config {
     }
 }
 
-// private
-
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -62,40 +54,13 @@ impl Default for Config {
     }
 }
 
-impl Default for Entry {
-    fn default() -> Self {
-        Self {
-            path: PathBuf::default(),
-            recursive: false,
-            interval: 0.0,
-            excludes: Vec::new(),
-            commands: Vec::new()
-        }
-    }
-}
-
-// configuration struct for TOML parsing (optional values and rename/alias)
-#[derive(Deserialize)]
-struct ConfigFromToml {
-    init: Option<bool>,
-    verbose: Option<bool>,
-    #[serde(rename = "dry-run")]
-    dry_run: Option<bool>,
-    #[serde(rename = "entry")]
-    entries: Vec<EntryFromToml>
-}
-
-// configuration entry struct for TOML parsing (optional values and
-// rename/alias)
-#[derive(Deserialize)]
-struct EntryFromToml {
-    path: PathBuf,
-    recursive: Option<bool>,
-    interval: Option<f64>,
-    #[serde(alias = "exclude")]
-    excludes: Option<Vec<String>>,
-    #[serde(alias = "command")]
-    commands: Vec<String>
+#[derive(Debug)]
+pub struct Entry {
+    pub path: PathBuf,
+    pub recursive: bool,
+    pub interval: f64,
+    pub excludes: Vec<Regex>,
+    pub commands: Vec<String>
 }
 
 impl Entry {
@@ -138,17 +103,49 @@ impl Entry {
     }
 }
 
+impl Default for Entry {
+    fn default() -> Self {
+        Self {
+            path: PathBuf::default(),
+            recursive: false,
+            interval: 0.0,
+            excludes: Vec::new(),
+            commands: Vec::new()
+        }
+    }
+}
+
+// configuration struct for TOML parsing (optional values and rename/alias)
+#[derive(Deserialize)]
+struct ConfigFromToml {
+    init: Option<bool>,
+    verbose: Option<bool>,
+    #[serde(rename = "dry-run")]
+    dry_run: Option<bool>,
+    #[serde(rename = "entry")]
+    entries: Vec<EntryFromToml>
+}
+
 impl ConfigFromToml {
     fn from(options: &crate::cli::Options) -> Self {
         // configuration file path
         let config_path = options.config_path();
 
         // parse configuration from file
-        let mut config: Self =
-            toml::from_str(&std::fs::read_to_string(&config_path).unwrap_or_else(|_| {
-                panic!("Could not open configuration file {:?}", &config_path)
-            }))
-            .unwrap_or_else(|_| panic!("Could not parse configuration file {:#?}", &config_path));
+        let mut config: Self = toml::from_str(
+            &std::fs::read_to_string(&config_path).unwrap_or_else(|err| {
+                panic!(
+                    "Could not open configuration file {:?}: {}",
+                    &config_path, err
+                )
+            })
+        )
+        .unwrap_or_else(|err| {
+            panic!(
+                "Could not parse configuration file {:#?}: {}",
+                &config_path, err
+            )
+        });
 
         // override file configuration with command line options
 
@@ -166,4 +163,17 @@ impl ConfigFromToml {
 
         config
     }
+}
+
+// configuration entry struct for TOML parsing (optional values and
+// rename/alias)
+#[derive(Deserialize)]
+struct EntryFromToml {
+    path: PathBuf,
+    recursive: Option<bool>,
+    interval: Option<f64>,
+    #[serde(alias = "exclude")]
+    excludes: Option<Vec<String>>,
+    #[serde(alias = "command")]
+    commands: Vec<String>
 }

@@ -1,11 +1,8 @@
+use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg};
 use std::{
     borrow::Cow,
     path::{Path, PathBuf}
 };
-
-use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg};
-
-// public
 
 pub struct Options {
     pub config: PathBuf,
@@ -70,8 +67,6 @@ impl Options {
         Cow::Borrowed(self.config.as_path())
     }
 }
-
-// private
 
 impl Default for Options {
     fn default() -> Self {

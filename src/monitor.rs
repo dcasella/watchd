@@ -1,12 +1,14 @@
-use std::{process::Command, sync::mpsc, time::Duration};
-
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use std::{process::Command, sync::mpsc, thread, time::Duration};
 
-use crate::config::Entry;
+use crate::{config, logger};
 
-pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
-    std::thread::Builder::new()
-        .name("notify-monitor".to_string())
+pub fn spawn(index: usize) {
+    // generate thread name for logging purposes
+    let thread_name = format!("watcher-{}", index);
+
+    thread::Builder::new()
+        .name(thread_name.clone())
         .spawn(move || {
             // event channel
             let (tx, rx) = mpsc::channel();
@@ -17,37 +19,43 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
             // add entry path to the watcher
             watcher
                 .watch(
-                    &entry.path,
-                    if entry.recursive {
+                    &config::OPTS.entries[index].path,
+                    if config::OPTS.entries[index].recursive {
                         RecursiveMode::Recursive
-                    }
-                    else {
+                    } else {
                         RecursiveMode::NonRecursive
-                    }
+                    },
                 )
                 .unwrap();
 
-            let mut synced = !init;
+            let thread_log = logger::ROOT.new(o!("thread" => thread_name));
+
+            if config::OPTS.verbose {
+                info!(thread_log, "spawn");
+            }
+
+            let mut synced = !config::OPTS.init;
 
             // event loop
             loop {
                 if synced {
                     'match_loop: loop {
-                        match rx
-                            .recv_timeout(Duration::from_millis((entry.interval * 1000_f64) as u64))
-                        {
+                        match rx.recv_timeout(Duration::from_millis(
+                            (config::OPTS.entries[index].interval * 1000_f64) as u64,
+                        )) {
                             Ok(DebouncedEvent::Create(path))
                             | Ok(DebouncedEvent::Write(path))
                             | Ok(DebouncedEvent::Chmod(path))
                             | Ok(DebouncedEvent::Remove(path)) => {
-                                for exclude in &entry.excludes {
+                                for exclude in &config::OPTS.entries[index].excludes {
                                     if let Some(path) = path.to_str() {
                                         if exclude.is_match(path) {
-                                            if verbose {
-                                                println!(
-                                                    "Event for {:?} ignored with exclude \"{:?}\" \
-                                                     for {:?}",
-                                                    &entry.path, &exclude, &path
+                                            if config::OPTS.verbose {
+                                                info!(
+                                                    thread_log,
+                                                    "event exclude";
+                                                    "pattern" => &exclude.as_str(),
+                                                    "path" => &path
                                                 );
                                             }
 
@@ -56,24 +64,32 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                                     }
                                 }
 
-                                if verbose {
-                                    println!("Event for {:?} for {:?}", &entry.path, &path);
+                                if config::OPTS.verbose {
+                                    if let Some(path) = path.to_str() {
+                                        info!(
+                                            thread_log,
+                                            "event";
+                                            "path" => &path
+                                        );
+                                    }
                                 }
 
                                 synced = false;
                             }
                             Ok(DebouncedEvent::Rename(path_from, path_to)) => {
-                                for exclude in &entry.excludes {
+                                for exclude in &config::OPTS.entries[index].excludes {
                                     if let Some(path_from) = path_from.to_str() {
                                         if let Some(path_to) = path_to.to_str() {
                                             if exclude.is_match(path_from)
                                                 || exclude.is_match(path_to)
                                             {
-                                                if verbose {
-                                                    println!(
-                                                        "Event for {:?} ignored with exclude \
-                                                         \"{:?}\" on Rename from {:?} to {:?}",
-                                                        &entry.path, &exclude, &path_from, &path_to
+                                                if config::OPTS.verbose {
+                                                    info!(
+                                                        thread_log,
+                                                        "event rename exclude";
+                                                        "pattern" => &exclude.as_str(),
+                                                        "path_from" => &path_from,
+                                                        "path_to" => &path_to
                                                     );
                                                 }
 
@@ -83,11 +99,17 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                                     }
                                 }
 
-                                if verbose {
-                                    println!(
-                                        "Event for {:?} from {:?} to {:?}",
-                                        &entry.path, &path_from, &path_to
-                                    );
+                                if config::OPTS.verbose {
+                                    if let Some(path_from) = path_from.to_str() {
+                                        if let Some(path_to) = path_to.to_str() {
+                                            info!(
+                                                thread_log,
+                                                "event rename";
+                                                "path_from" => &path_from,
+                                                "path_to" => &path_to
+                                            );
+                                        }
+                                    }
                                 }
 
                                 synced = false;
@@ -101,15 +123,15 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                 }
 
                 if !synced {
-                    if dry_run {
-                        println!("Run command {:#?} for {:?}", &entry.commands, &entry.path);
-                    }
-                    else {
-                        // TODO: run entry.commands
-                        for command in &entry.commands {
-                            if verbose {
-                                println!("Run {:?}", &command);
-                            }
+                    if config::OPTS.dry_run {
+                        info!(
+                            thread_log,
+                            "run";
+                            "commands" => format!("{:?}", config::OPTS.entries[index].commands)
+                        );
+                    } else {
+                        for command in &config::OPTS.entries[index].commands {
+                            info!(thread_log, "run"; "command" => &command);
 
                             let output = Command::new("sh")
                                 .arg("-c")
@@ -119,11 +141,11 @@ pub fn spawn(entry: Entry, init: bool, dry_run: bool, verbose: bool) {
                                     panic!("Run {:?} failed", &command);
                                 });
 
-                            if verbose {
-                                match String::from_utf8(output.stdout) {
-                                    Ok(stdout) => println!("Stdout: {}", stdout),
-                                    Err(err) => eprintln!("Stdout error: {}", err)
+                            match String::from_utf8(output.stdout) {
+                                Ok(stdout) => {
+                                    info!(thread_log, "run"; "command" => &command, "output" => stdout.trim_end(), "error" => false)
                                 }
+                                Err(err) => warn!(thread_log, "run"; "command" => &command, "output" => err.to_string(), "error" => true)
                             }
                         }
                     }

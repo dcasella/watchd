@@ -1,19 +1,26 @@
 init = true
 verbose = true
 
-# [[entry]]
-# path = "."
-# interval = 5
-# exclude = ["^.*\\.sw(?:p|x|px)$"]
-# command = [
-# 	"echo \"term: $TERM\" >> example/logfile.log"
-# ]
-
 [[entry]]
 path = "example"
-recursive = true
-interval = 30
+interval = 5
 command = [
-    "echo wela",
-    # "cat example/logfile.log"
+    "echo example"
+]
+
+[[entry]]
+path = "src"
+interval = 7
+exclude = ["^.*\\.sw(?:p|x|px)$"]
+command = [
+	"echo src"
+]
+
+[[entry]]
+path = "target"
+recursive = true
+interval = 9
+exclude = ["^\\."]
+command = [
+	"echo target"
 ]

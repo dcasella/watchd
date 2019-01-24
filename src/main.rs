@@ -3,42 +3,26 @@ extern crate serde_derive;
 #[macro_use]
 extern crate slog;
 #[macro_use]
-extern crate slog_scope;
+extern crate lazy_static;
 
 mod cli;
 mod config;
+mod logger;
 mod monitor;
 
 use std::{thread::sleep, time::Duration};
 
-use sloggers::{
-    terminal::{Destination, TerminalLoggerBuilder},
-    types::Severity,
-    Build
-};
-
-use config::Config;
-
 fn main() {
-    let config = Config::from(&cli::Options::load());
-
-    let mut builder = TerminalLoggerBuilder::new();
-    builder.level(if config.verbose {
-        Severity::Trace
-    }
-    else {
-        Severity::Warning
-    });
-    builder.destination(Destination::Stdout);
-
-    let _guard = slog_scope::set_global_logger(builder.build().unwrap());
-
-    for entry in config.entries {
-        monitor::spawn(entry, config.init, config.dry_run, config.verbose);
+    if config::OPTS.verbose {
+        info!(logger::ROOT, "starting watchers");
     }
 
-    if config.verbose {
-        info!("watchd started");
+    for (i, _) in config::OPTS.entries.iter().enumerate() {
+        monitor::spawn(i);
+    }
+
+    if config::OPTS.verbose {
+        info!(logger::ROOT, "init complete");
     }
 
     // main loop
