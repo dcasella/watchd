@@ -13,7 +13,7 @@ pub fn spawn(index: usize) {
             // event channel
             let (tx, rx) = mpsc::channel();
 
-            // debounced (1s) events watcher
+            // debounced (10ms) events watcher
             let mut watcher = notify::watcher(tx, Duration::from_millis(10)).unwrap();
 
             // add entry path to the watcher
@@ -22,9 +22,10 @@ pub fn spawn(index: usize) {
                     &config::OPTS.entries[index].path,
                     if config::OPTS.entries[index].recursive {
                         RecursiveMode::Recursive
-                    } else {
+                    }
+                    else {
                         RecursiveMode::NonRecursive
-                    },
+                    }
                 )
                 .unwrap();
 
@@ -41,7 +42,7 @@ pub fn spawn(index: usize) {
                 if synced {
                     'match_loop: loop {
                         match rx.recv_timeout(Duration::from_millis(
-                            (config::OPTS.entries[index].interval * 1000_f64) as u64,
+                            (config::OPTS.entries[index].interval * 1000_f64) as u64
                         )) {
                             Ok(DebouncedEvent::Create(path))
                             | Ok(DebouncedEvent::Write(path))
@@ -127,25 +128,39 @@ pub fn spawn(index: usize) {
                         info!(
                             thread_log,
                             "run";
+                            "mode" => "dry",
                             "commands" => format!("{:?}", config::OPTS.entries[index].commands)
                         );
-                    } else {
+                    }
+                    else {
                         for command in &config::OPTS.entries[index].commands {
-                            info!(thread_log, "run"; "command" => &command);
+                            info!(
+                                thread_log, "run";
+                                "command" => &command
+                            );
 
                             let output = Command::new("sh")
                                 .arg("-c")
                                 .arg(&command)
                                 .output()
                                 .unwrap_or_else(|_| {
-                                    panic!("Run {:?} failed", &command);
+                                    panic!("run {:?} failed", &command);
                                 });
 
                             match String::from_utf8(output.stdout) {
-                                Ok(stdout) => {
-                                    info!(thread_log, "run"; "command" => &command, "output" => stdout.trim_end(), "error" => false)
-                                }
-                                Err(err) => warn!(thread_log, "run"; "command" => &command, "output" => err.to_string(), "error" => true)
+                                Ok(stdout) => info!(
+                                    thread_log,
+                                    "run";
+                                    "command" => &command,
+                                    "output" => stdout.trim_end()
+                                ),
+                                Err(err) => warn!(
+                                    thread_log,
+                                    "run";
+                                    "error" => true,
+                                    "command" => &command,
+                                    "output" => err.to_string()
+                                )
                             }
                         }
                     }
@@ -154,5 +169,5 @@ pub fn spawn(index: usize) {
                 }
             }
         })
-        .expect("Could not spawn watcher thread");
+        .expect("could not spawn watcher thread");
 }

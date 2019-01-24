@@ -4,10 +4,10 @@ use slog_async::Async;
 use slog_term::{FullFormat, PlainDecorator};
 use std::fs::OpenOptions;
 
-use crate::config::Config;
+use crate::config;
 
 lazy_static! {
-    pub static ref ROOT: Logger = self::create("watchd.log");
+    pub static ref ROOT: Logger = self::create(config::OPTS.log_file.to_str().unwrap());
 }
 
 fn create(path: &'static str) -> Logger {

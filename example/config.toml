@@ -1,3 +1,4 @@
+log-file = "watchd.log"
 init = true
 verbose = true
 

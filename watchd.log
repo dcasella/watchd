@@ -1,0 +1,8 @@
+Jan 24 17:34:44.209 INFO starting watchers, program: watchd
+Jan 24 17:34:44.210 INFO init complete, program: watchd
+Jan 24 17:34:44.218 INFO spawn, thread: watcher-1, program: watchd
+Jan 24 17:34:44.218 INFO run, commands: ["echo src"], thread: watcher-1, program: watchd
+Jan 24 17:34:44.218 INFO spawn, thread: watcher-0, program: watchd
+Jan 24 17:34:44.218 INFO run, commands: ["echo example"], thread: watcher-0, program: watchd
+Jan 24 17:34:44.312 INFO spawn, thread: watcher-2, program: watchd
+Jan 24 17:34:44.312 INFO run, commands: ["echo target"], thread: watcher-2, program: watchd

@@ -3,53 +3,30 @@ use regex::Regex;
 use std::path::PathBuf;
 
 lazy_static! {
-    pub static ref OPTS: Config = Config::from(&cli::Options::load());
+    pub static ref OPTS: Config = Config::from(cli::Options::load());
 }
 
 #[derive(Debug)]
 pub struct Config {
+    pub log_file: PathBuf,
+    pub dry_run: bool,
     pub init: bool,
     pub verbose: bool,
-    pub dry_run: bool,
     pub entries: Vec<Entry>
 }
 
 impl Config {
-    pub fn from(options: &crate::cli::Options) -> Self {
-        let mut config = Self::default();
-
+    // convert ConfigFromToml to Config
+    pub fn from(options: cli::Options) -> Self {
         // parse configuration file and command line options
         let config_toml = ConfigFromToml::from(options);
 
-        // convert ConfigFromToml to Config
-
-        if let Some(value) = config_toml.init {
-            config.init = value;
-        }
-
-        if let Some(value) = config_toml.verbose {
-            config.verbose = value;
-        }
-
-        if let Some(value) = config_toml.dry_run {
-            config.dry_run = value;
-        }
-
-        for entry_toml in config_toml.entries {
-            config.entries.push(Entry::from(&entry_toml));
-        }
-
-        config
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
         Self {
-            init: false,
-            verbose: false,
-            dry_run: false,
-            entries: Vec::new()
+            log_file: config_toml.log_file.unwrap(),
+            dry_run: config_toml.dry_run.unwrap_or_default(),
+            init: config_toml.init.unwrap_or_default(),
+            verbose: config_toml.verbose.unwrap_or_default(),
+            entries: config_toml.entries.iter().map(Entry::from).collect()
         }
     }
 }
@@ -64,53 +41,28 @@ pub struct Entry {
 }
 
 impl Entry {
+    // convert EntryFromToml to Entry
     fn from(entry_toml: &EntryFromToml) -> Self {
-        let mut entry = Self::default();
-
-        // retrieve path from entry_toml
-        if entry_toml.path.exists() {
-            entry.path = entry_toml.path.clone();
-        }
-        else {
-            panic!("No such file or directory {:#?}", entry_toml.path);
-        }
-
-        // if entry_toml.recursive is set, retrieve it
-        if let Some(value) = entry_toml.recursive {
-            entry.recursive = value;
-        }
-
-        // retrieve commands from entry_toml
-        entry.commands = entry_toml.commands.clone();
-
-        // if entry_toml.interval is set, retrieve it
-        if let Some(value) = entry_toml.interval {
-            entry.interval = value;
-        }
-
-        // if entry_toml.exclude is set, retrieve it
-        if let Some(expressions) = entry_toml.excludes.clone() {
-            // convert each string expression in a regex
-            for expr in expressions {
-                entry.excludes.push(
-                    Regex::new(&expr)
-                        .unwrap_or_else(|_| panic!("Could not parse RegExp {:#?}", expr))
-                );
-            }
-        }
-
-        entry
-    }
-}
-
-impl Default for Entry {
-    fn default() -> Self {
         Self {
-            path: PathBuf::default(),
-            recursive: false,
-            interval: 0.0,
-            excludes: Vec::new(),
-            commands: Vec::new()
+            path: if entry_toml.path.exists() {
+                entry_toml.path.to_owned()
+            }
+            else {
+                panic!("No such file or directory {:#?}", entry_toml.path);
+            },
+            recursive: entry_toml.recursive.unwrap_or_default(),
+            interval: entry_toml.interval.unwrap_or_default(),
+            excludes: entry_toml
+                .excludes
+                .to_owned()
+                .unwrap_or_default()
+                .iter()
+                .map(|x| {
+                    // compile each exclude string
+                    Regex::new(&x).unwrap_or_else(|_| panic!("Could not parse RegExp {:#?}", x))
+                })
+                .collect(),
+            commands: entry_toml.commands.to_owned()
         }
     }
 }
@@ -118,50 +70,55 @@ impl Default for Entry {
 // configuration struct for TOML parsing (optional values and rename/alias)
 #[derive(Deserialize)]
 struct ConfigFromToml {
-    init: Option<bool>,
-    verbose: Option<bool>,
+    #[serde(rename = "log-file")]
+    log_file: Option<PathBuf>,
     #[serde(rename = "dry-run")]
     dry_run: Option<bool>,
+    init: Option<bool>,
+    verbose: Option<bool>,
     #[serde(rename = "entry")]
     entries: Vec<EntryFromToml>
 }
 
 impl ConfigFromToml {
-    fn from(options: &crate::cli::Options) -> Self {
-        // configuration file path
-        let config_path = options.config_path();
-
+    fn from(options: crate::cli::Options) -> Self {
         // parse configuration from file
-        let mut config: Self = toml::from_str(
-            &std::fs::read_to_string(&config_path).unwrap_or_else(|err| {
+        let mut config_toml: Self = toml::from_str(
+            &std::fs::read_to_string(&options.config_file).unwrap_or_else(|err| {
                 panic!(
                     "Could not open configuration file {:?}: {}",
-                    &config_path, err
+                    &options.config_file, err
                 )
             })
         )
         .unwrap_or_else(|err| {
             panic!(
                 "Could not parse configuration file {:#?}: {}",
-                &config_path, err
+                &options.config_file, err
             )
         });
 
         // override file configuration with command line options
 
-        if options.init {
-            config.init = Some(true);
-        }
-
-        if options.verbose {
-            config.verbose = Some(true);
+        if options.log_file != PathBuf::from(crate::DEFAULT_LOG_PATH)
+            || config_toml.log_file.is_none()
+        {
+            config_toml.log_file = Some(options.log_file);
         }
 
         if options.dry_run {
-            config.dry_run = Some(true);
+            config_toml.dry_run = Some(true);
         }
 
-        config
+        if options.init {
+            config_toml.init = Some(true);
+        }
+
+        if options.verbose {
+            config_toml.verbose = Some(true);
+        }
+
+        config_toml
     }
 }
 
