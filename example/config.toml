@@ -1,12 +1,10 @@
-log-file = "watchd.log"
 init = true
-verbose = true
 
 [[entry]]
 path = "example"
 interval = 5
 command = [
-    "echo example"
+    "echo 'example'"
 ]
 
 [[entry]]
@@ -14,7 +12,7 @@ path = "src"
 interval = 7
 exclude = ["^.*\\.sw(?:p|x|px)$"]
 command = [
-	"echo src"
+	"echo 'src'"
 ]
 
 [[entry]]
@@ -23,5 +21,5 @@ recursive = true
 interval = 9
 exclude = ["^\\."]
 command = [
-	"echo target"
+	"echo 'target'"
 ]

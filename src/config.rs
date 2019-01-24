@@ -8,7 +8,7 @@ lazy_static! {
 
 #[derive(Debug)]
 pub struct Config {
-    pub log_file: PathBuf,
+    pub log_file: Option<PathBuf>,
     pub dry_run: bool,
     pub init: bool,
     pub verbose: bool,
@@ -19,13 +19,14 @@ impl Config {
     // convert ConfigFromToml to Config
     pub fn from(options: cli::Options) -> Self {
         // parse configuration file and command line options
-        let config_toml = ConfigFromToml::from(options);
+        let config_toml = ConfigFromToml::from(&options);
 
+        // override file configuration with command line options
         Self {
-            log_file: config_toml.log_file.unwrap(),
-            dry_run: config_toml.dry_run.unwrap_or_default(),
-            init: config_toml.init.unwrap_or_default(),
-            verbose: config_toml.verbose.unwrap_or_default(),
+            log_file: options.log_file.or(config_toml.log_file),
+            dry_run: options.dry_run || config_toml.dry_run.unwrap_or_default(),
+            init: options.init || config_toml.init.unwrap_or_default(),
+            verbose: options.verbose || config_toml.verbose.unwrap_or_default(),
             entries: config_toml.entries.iter().map(Entry::from).collect()
         }
     }
@@ -81,9 +82,9 @@ struct ConfigFromToml {
 }
 
 impl ConfigFromToml {
-    fn from(options: crate::cli::Options) -> Self {
+    fn from(options: &cli::Options) -> Self {
         // parse configuration from file
-        let mut config_toml: Self = toml::from_str(
+        toml::from_str(
             &std::fs::read_to_string(&options.config_file).unwrap_or_else(|err| {
                 panic!(
                     "Could not open configuration file {:?}: {}",
@@ -96,29 +97,7 @@ impl ConfigFromToml {
                 "Could not parse configuration file {:#?}: {}",
                 &options.config_file, err
             )
-        });
-
-        // override file configuration with command line options
-
-        if options.log_file != PathBuf::from(crate::DEFAULT_LOG_PATH)
-            || config_toml.log_file.is_none()
-        {
-            config_toml.log_file = Some(options.log_file);
-        }
-
-        if options.dry_run {
-            config_toml.dry_run = Some(true);
-        }
-
-        if options.init {
-            config_toml.init = Some(true);
-        }
-
-        if options.verbose {
-            config_toml.verbose = Some(true);
-        }
-
-        config_toml
+        })
     }
 }
 

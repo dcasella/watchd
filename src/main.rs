@@ -13,7 +13,6 @@ mod monitor;
 use std::{thread::sleep, time::Duration};
 
 static DEFAULT_CONFIG_PATH: &str = "/etc/watchd/config.toml";
-static DEFAULT_LOG_PATH: &str = "/var/log/watchd.log";
 
 fn main() {
     if config::OPTS.verbose {

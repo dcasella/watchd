@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 pub struct Options {
     pub config_file: PathBuf,
-    pub log_file: PathBuf,
+    pub log_file: Option<PathBuf>,
     pub init: bool,
     pub verbose: bool,
     pub dry_run: bool
@@ -27,7 +27,6 @@ impl Options {
                     .help("Specify log file")
                     .empty_values(false)
                     .value_name("FILE")
-                    .default_value(crate::DEFAULT_LOG_PATH)
             )
             .arg(
                 Arg::with_name("dry-run")
@@ -51,7 +50,7 @@ impl Options {
 
         Self {
             config_file: PathBuf::from(matches.value_of("config-file").unwrap()),
-            log_file: PathBuf::from(matches.value_of("log-file").unwrap()),
+            log_file: matches.value_of("log-file").map(PathBuf::from),
             dry_run: matches.is_present("dry-run"),
             init: matches.is_present("init"),
             verbose: matches.is_present("verbose")
