@@ -8,7 +8,7 @@ extern crate lazy_static;
 mod cli;
 mod config;
 mod logger;
-mod monitor;
+mod watcher;
 
 use std::{thread::sleep, time::Duration};
 
@@ -18,7 +18,7 @@ fn main() {
     }
 
     for (i, _) in config::OPTS.entries.iter().enumerate() {
-        monitor::spawn(i);
+        watcher::spawn(i);
     }
 
     if config::OPTS.verbose {
