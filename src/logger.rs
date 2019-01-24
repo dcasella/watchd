@@ -1,10 +1,9 @@
+use crate::config;
 use lazy_static::lazy_static;
 use slog::{Drain, Duplicate, Fuse, Level, LevelFilter, Logger};
 use slog_async::Async;
 use slog_term::{FullFormat, PlainDecorator};
 use std::{fs::OpenOptions, path::PathBuf};
-
-use crate::config;
 
 lazy_static! {
     // root logger

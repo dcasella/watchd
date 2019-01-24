@@ -1,7 +1,6 @@
+use crate::{config, logger};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 use std::{process::Command, sync::mpsc, thread, time::Duration};
-
-use crate::{config, logger};
 
 pub fn spawn(index: usize) {
     // generate thread name for logging purposes
