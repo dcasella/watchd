@@ -24,7 +24,7 @@ fn main() {
     }
 
     if config::OPTS.verbose {
-        info!(logger::ROOT, "init complete");
+        info!(logger::ROOT, "watchers ready");
     }
 
     // main loop
