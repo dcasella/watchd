@@ -6,7 +6,6 @@ edition = "2018"
 
 [dependencies]
 clap = "2"
-crossbeam-channel = "0.3"
 lazy_static = "1.2"
 notify = "4"
 regex = "1"
