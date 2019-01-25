@@ -2,6 +2,7 @@
 name = "watchd"
 version = "0.1.0"
 authors = ["Davide Casella <davide@comedia.it>"]
+description = "A fearlessly concurrent filesystem watcher daemon"
 edition = "2018"
 
 [dependencies]

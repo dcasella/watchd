@@ -1,7 +1,12 @@
 use crate::{config, logger};
-use std::{process::Command, sync::mpsc, thread, time::Duration};
+use std::{process::Command, sync::mpsc::Receiver, thread, time::Duration};
 
-pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
+struct Pending {
+    command: bool,
+    loop_break: bool
+}
+
+pub fn spawn(index: usize, shared_rx: Receiver<usize>) {
     // generate thread name for logging purposes
     let thread_name = format!("handler-{}", index);
 
@@ -23,9 +28,12 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
             }
 
             // if `init` is true, run the command first thing in the loop
-            let mut pending_command = config::OPTS.init;
+            let mut pending = Pending {
+                command: config::OPTS.init,
+                loop_break: false
+            };
 
-            if config::OPTS.verbose && pending_command {
+            if config::OPTS.verbose && pending.command {
                 info!(
                     thread_log, "INIT";
                     "sync" => true
@@ -34,25 +42,20 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
 
             // thread loop
             loop {
-                if !pending_command {
+                if !pending.command {
                     // watch for events on `shared_rx`
                     loop {
-                        // received an event before timeout elapsed
-                        if shared_rx
-                            .recv_timeout(Duration::from_millis(
-                                (config::OPTS.entries[index].interval * 1000_f64) as u64
-                            ))
-                            .is_ok()
-                        {
-                            if config::OPTS.verbose {
-                                info!(thread_log, "EVENT");
-                            }
-
-                            // notify that a command execution is pending
-                            pending_command = true;
+                        // note that either `recv` or `recv_timeout` can update the value of
+                        // `pending.command`
+                        pending = if config::OPTS.entries[index].interval == 0.0 {
+                            // handle null `interval`
+                            self::recv(&thread_log, &shared_rx)
                         }
-                        // no event received before timeout
                         else {
+                            self::recv_timeout(&thread_log, &shared_rx, pending.command, index)
+                        };
+
+                        if pending.loop_break {
                             // break out of the watch loop:
                             // if a command execution is pending it will be consumed, otherwise the
                             // watch loop will resume
@@ -61,7 +64,7 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
                     }
                 }
 
-                if pending_command {
+                if pending.command {
                     // log the commands
                     if config::OPTS.dry_run {
                         info!(
@@ -83,9 +86,69 @@ pub fn spawn(index: usize, shared_rx: mpsc::Receiver<usize>) {
                     }
 
                     // notify that a command was executed
-                    pending_command = false;
+                    pending.command = false;
                 }
             }
         })
         .expect("Could not spawn handler thread");
+}
+
+fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<usize>) -> Pending {
+    // received an event
+    match shared_rx.recv() {
+        Ok(_) => {
+            if config::OPTS.verbose {
+                info!(thread_log, "EVENT");
+            }
+
+            // notify that a command execution is pending
+            Pending {
+                command: true,
+                loop_break: true
+            }
+        }
+        Err(err) => {
+            if config::OPTS.verbose {
+                crit!(
+                    thread_log, "EVENT";
+                    "message" => err.to_string(),
+                    "error" => true
+                );
+            }
+
+            panic!("Error while receiving event: {}", err)
+        }
+    }
+}
+
+fn recv_timeout(
+    thread_log: &slog::Logger,
+    shared_rx: &Receiver<usize>,
+    pending_command: bool,
+    index: usize
+) -> Pending {
+    // received an event before timeout elapsed
+    if shared_rx
+        .recv_timeout(Duration::from_millis(
+            (config::OPTS.entries[index].interval * 1000_f64) as u64
+        ))
+        .is_ok()
+    {
+        if config::OPTS.verbose {
+            info!(thread_log, "EVENT");
+        }
+
+        // notify that a command execution is pending
+        Pending {
+            command: true,
+            loop_break: false
+        }
+    }
+    // no event received before timeout
+    else {
+        Pending {
+            command: pending_command,
+            loop_break: true
+        }
+    }
 }

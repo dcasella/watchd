@@ -46,6 +46,7 @@ impl Entry {
     // convert EntryFromToml to Entry
     fn from(entry_toml: &EntryFromToml) -> Self {
         Self {
+            // ensure `path` exists
             path: if entry_toml.path.exists() {
                 entry_toml.path.to_owned()
             }
@@ -53,7 +54,12 @@ impl Entry {
                 panic!("No such file or directory {:#?}", entry_toml.path);
             },
             recursive: entry_toml.recursive.unwrap_or_default(),
-            interval: entry_toml.interval.unwrap_or_default(),
+            // ensure `interval` is not negative
+            interval: match entry_toml.interval {
+                Some(value) if value.is_sign_positive() => value,
+                Some(value) => panic!("Interval can't be negative: {}", value),
+                None => f64::default()
+            },
             excludes: entry_toml
                 .excludes
                 .to_owned()
