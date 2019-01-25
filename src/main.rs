@@ -12,28 +12,13 @@ mod logger;
 mod signal;
 mod watcher;
 
-use std::{error::Error, sync::mpsc};
+use std::{io::Error, sync::mpsc};
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Error> {
     info!(
         logger::ROOT, "PROGRAM";
         "status" => "started"
     );
-
-    self::boot();
-
-    // signal handling
-    signal::select()
-}
-
-fn boot() {
-    if config::OPTS.verbose {
-        info!(
-            logger::ROOT, "BOOT";
-            "watchers" => "starting",
-            "handlers" => "starting"
-        );
-    }
 
     // for each entry, instantiate a shared channel such that the watcher thread
     // writes to `shared_tx` while the handler thread read from `shared_rx`
@@ -51,4 +36,7 @@ fn boot() {
             "handlers" => "started"
         );
     }
+
+    // signal handling
+    signal::handle()
 }
