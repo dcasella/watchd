@@ -19,3 +19,14 @@ slog-async = "2.3"
 slog-scope = "4.1"
 slog-term = "2.4"
 toml = "0.4"
+
+[package.metadata.deb]
+maintainer = "Davide Casella <dcasella@libgcc.so>"
+depends = "$auto"
+section = "rust"
+priority = "optional"
+assets = [
+    ["target/release/watchd", "usr/sbin/", "755"],
+    ["package/etc/config.toml", "etc/watchd/", "640"],
+    ["package/systemd/watchd.service", "lib/systemd/system/", "644"]
+]
