@@ -1,9 +1,10 @@
 [package]
 name = "watchd"
 version = "0.1.0"
-authors = ["Davide Casella <davide@comedia.it>"]
-description = "A fearlessly concurrent filesystem watcher daemon"
+authors = ["Davide Casella <dcasella@libgcc.so>"]
 edition = "2018"
+description = "A fearlessly concurrent filesystem watcher daemon"
+license = "MIT"
 
 [dependencies]
 clap = "2"

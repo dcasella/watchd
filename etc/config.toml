@@ -1,0 +1,86 @@
+# Configuration file for the watchd daemon
+
+## Global
+
+# log-file
+# --------
+# Duplicate stdout logs to the specified file
+#
+# Default:
+# None
+#
+# Example:
+# log-file = "/var/log/watchd.log"
+log-file = "/var/log/watchd.log"
+
+# dry-run
+# -------
+# Log commands without executing
+#
+# Default:
+# false
+#
+# Example:
+# dry-run = true
+
+# init
+# ----
+# Execute commands on program start
+#
+# Default:
+# false
+#
+# Example:
+# init = true
+
+# verbose
+# -------
+# Increment log verbosity
+#
+# Default:
+# false
+#
+# Example:
+# verbose = true
+
+## Entries
+
+# [[entry]]
+# ---------
+# File or directory to watch
+# Multiple entries allowed
+#
+# Parameters:
+# path: Path to watch
+# - String
+# - Required
+# - Must be a valid filesystem path
+# recursive: Watch `path` and its subdirectories
+# - Boolean
+# - Default: false
+# interval: Time between the last received event and the command to execute
+# - Float64
+# - Default: 0.0
+# - Must be non-negative
+# exclude: List of patterns to ignore
+# - []String
+# - Default: []
+# - Must be valid regular expressions
+# - Backslashes must be escaped
+# command:
+# - []String
+# - Required
+# - Commands are executed via $(sh -c "`command`")
+#
+# Example:
+# [[entry]]
+# path = "/etc/watchd"
+# interval = 1
+# exclude = ["^.*\\.sw(?:p|x|px)$"]
+# command = [
+#     "valid-command",
+#     "echo \"$SHELL\""
+# ]
+[[entry]]
+path = "/"
+command = []
