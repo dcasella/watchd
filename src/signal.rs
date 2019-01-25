@@ -10,8 +10,11 @@ pub fn handle() -> Result<(), Error> {
         SIGTERM, // 15
     ])?;
 
+    // main loop
+    // match signals as they come
     for signal in signals.forever() {
         match signal {
+            // exit program
             SIGTERM | SIGINT | SIGQUIT => {
                 if config::OPTS.verbose {
                     info!(
@@ -23,6 +26,7 @@ pub fn handle() -> Result<(), Error> {
 
                 break;
             }
+            // reload configuration
             SIGHUP => {
                 info!(
                     logger::ROOT, "PROGRAM";

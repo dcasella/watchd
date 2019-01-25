@@ -37,6 +37,6 @@ fn main() -> Result<(), Error> {
         );
     }
 
-    // signal handling
+    // main loop signal handling
     signal::handle()
 }
