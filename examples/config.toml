@@ -5,7 +5,7 @@ path = "examples"
 interval = 5
 exclude = ["^.*\\.sw(?:p|x|px)$"]
 command = [
-    "echo 'example' >&2"
+    "echo 'examples' >&2"
 ]
 
 [[entry]]
