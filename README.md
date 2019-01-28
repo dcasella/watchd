@@ -126,7 +126,7 @@ Watch `path` and its subdirectories.
 - Boolean
 - Default: `false`
 
-##### `delay
+##### `delay`
 
 Time between the last received event and the command to execute.
 
@@ -134,7 +134,7 @@ Time between the last received event and the command to execute.
 - Default: `0.0`
 - Must be non-negative
 
-##### `exclude
+##### `exclude`
 
 List of patterns to ignore.
 
@@ -143,7 +143,7 @@ List of patterns to ignore.
 - Must be valid regular expressions
 - Backslashes must be escaped
 
-##### `command
+##### `command`
 
 - []String
 - Required
