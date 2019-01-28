@@ -2,7 +2,7 @@ init = true
 
 [[entry]]
 path = "examples"
-interval = 5
+delay = 5
 exclude = ["^.*\\.sw(?:p|x|px)$"]
 command = [
     "echo 'examples' >&2"
@@ -10,7 +10,7 @@ command = [
 
 [[entry]]
 path = "src"
-interval = 0
+delay = 0
 command = [
 	"echo 'src'"
 ]
@@ -18,7 +18,7 @@ command = [
 [[entry]]
 path = "target"
 recursive = true
-interval = 9
+delay = 9
 exclude = ["^\\."]
 command = [
 	"echo 'target'"

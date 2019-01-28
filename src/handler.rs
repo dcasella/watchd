@@ -47,8 +47,8 @@ pub fn spawn(index: usize, shared_rx: Receiver<usize>) {
                     loop {
                         // note that either `recv` or `recv_timeout` can update the value of
                         // `pending.command`
-                        pending = if config::OPTS.entries[index].interval == 0.0 {
-                            // handle null `interval`
+                        pending = if config::OPTS.entries[index].delay == 0.0 {
+                            // handle null `delay`
                             self::recv(&thread_log, &shared_rx)
                         }
                         else {
@@ -148,7 +148,7 @@ fn recv_timeout(
     // received an event before timeout elapsed
     if shared_rx
         .recv_timeout(Duration::from_millis(
-            (config::OPTS.entries[index].interval * 1000_f64) as u64
+            (config::OPTS.entries[index].delay * 1000_f64) as u64
         ))
         .is_ok()
     {

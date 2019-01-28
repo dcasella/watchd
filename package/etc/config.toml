@@ -58,7 +58,7 @@ log-file = "/var/log/watchd.log"
 # recursive: Watch `path` and its subdirectories
 # - Boolean
 # - Default: false
-# interval: Time between the last received event and the command to execute
+# delay: Time between the last received event and the command to execute
 # - Float64
 # - Default: 0.0
 # - Must be non-negative
@@ -75,7 +75,7 @@ log-file = "/var/log/watchd.log"
 # Example:
 # [[entry]]
 # path = "/etc/watchd"
-# interval = 1
+# delay = 1
 # exclude = ["^.*\\.sw(?:p|x|px)$"]
 # command = [
 #     "valid-command",
