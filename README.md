@@ -134,7 +134,8 @@ Time between the last received event and the command to execute.
 
 ##### `exclude`
 
-List of patterns to ignore.
+List of patterns to ignore.  
+Syntax: [`docs.rs`](https://docs.rs/regex/1.1.0/regex/#syntax).
 
 - []String
 - Default: `[]`
