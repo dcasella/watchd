@@ -119,9 +119,7 @@ fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<usize>) -> Pending {
     // received an event
     match shared_rx.recv() {
         Ok(_) => {
-            if config::OPTS.verbose {
-                info!(thread_log, "EVENT");
-            }
+            info!(thread_log, "EVENT");
 
             // notify that a command execution is pending
             Pending {
@@ -130,13 +128,11 @@ fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<usize>) -> Pending {
             }
         }
         Err(err) => {
-            if config::OPTS.verbose {
-                crit!(
-                    thread_log, "EVENT";
-                    "message" => err.to_string(),
-                    "error" => true
-                );
-            }
+            crit!(
+                thread_log, "EVENT";
+                "message" => err.to_string(),
+                "error" => true
+            );
 
             panic!("Error while receiving event: {}", err)
         }
@@ -156,9 +152,7 @@ fn recv_timeout(
         ))
         .is_ok()
     {
-        if config::OPTS.verbose {
-            info!(thread_log, "EVENT");
-        }
+        info!(thread_log, "EVENT");
 
         // notify that a command execution is pending
         Pending {

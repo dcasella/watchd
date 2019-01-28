@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Switch from asynchronous to synchronous command execution
+- Increase handler verbosity
 
 ## [0.1.1] - 2019-01-28
 
