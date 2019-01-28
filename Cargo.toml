@@ -30,3 +30,13 @@ assets = [
     ["package/etc/config.toml", "etc/watchd/", "640"],
     ["package/systemd/watchd.service", "lib/systemd/system/", "644"]
 ]
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+watchd = { path = "/usr/sbin/watchd" }
+
+[package.metadata.rpm.files]
+"etc/config.toml" = { path = "/etc/watchd/config.toml" }
+"systemd/watchd.service" = { path = "/usr/lib/systemd/system/watchd.service" }
