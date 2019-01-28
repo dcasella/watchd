@@ -1,5 +1,5 @@
 use crate::{config, logger};
-use std::{process::Command, sync::mpsc::Receiver, thread, time::Duration};
+use std::{process::Command, str, sync::mpsc::Receiver, thread, time::Duration};
 
 struct Pending {
     command: bool,
@@ -81,7 +81,29 @@ pub fn spawn(index: usize, shared_rx: Receiver<usize>) {
                                 "command" => command
                             );
 
-                            let _ = Command::new("sh").arg("-c").arg(&command).spawn();
+                            let output = Command::new("sh")
+                                .arg("-c")
+                                .arg(&command)
+                                .output()
+                                .expect("Error while executing command");
+
+                            if config::OPTS.verbose {
+                                info!(
+                                    thread_log, "OUTPUT";
+                                    "stdout" => match str::from_utf8(&output.stdout) {
+                                        Ok(value) => value,
+                                        Err(err) => panic!("Could not parse stdout: {}", err)
+                                    },
+                                    "stderr" => match str::from_utf8(&output.stderr) {
+                                        Ok(value) => value,
+                                        Err(err) => panic!("Could not parse stderr: {}", err)
+                                    }
+                                );
+                            }
+
+                            if !output.status.success() {
+                                break;
+                            }
                         }
                     }
 
