@@ -28,8 +28,8 @@ pub fn handle() -> Result<(), Error> {
             }
             // reload configuration
             SIGHUP => {
-                info!(
-                    logger::ROOT, "PROGRAM";
+                warn!(
+                    logger::ROOT, "PROGRAM (UNIMPLEMENTED)";
                     "status" => "reloading",
                     "signal" => signal
                 );
