@@ -48,7 +48,7 @@ rm -rf %{buildroot}
 %systemd_postun_with_restart watchd.service
 
 %config
-%{_configdir}
+%{_configdir}/config.toml
 
 %files
 %defattr(-,root,root)
