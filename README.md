@@ -104,8 +104,6 @@ Increment log verbosity.
 verbose = true
 ```
 
-Entries
-
 #### `entry` sections
 
 File or directory to watch.  
