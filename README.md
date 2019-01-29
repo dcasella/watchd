@@ -21,9 +21,10 @@ The `.deb` file will be in the `./target/debian` directory.
 
 ### Build on RHEL
 
-Have Docker running on your machine, then run:
+Install `cargo-rpm` and use the Makefile:
 
 ```
+cargo install cargo-rpm
 make rpmbuild
 ```
 

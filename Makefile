@@ -11,5 +11,3 @@ rpmbuild: ${RPMDIR}/${NAME}.spec rpmprep
 
 rpmprep: package/*
 	@cp -r $^ ${RPMDIR}
-
-.PHONY: clean
