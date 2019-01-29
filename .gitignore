@@ -5,5 +5,9 @@
 
 # RPM
 
-.rpm/etc
-.rpm/systemd
+/.rpm/etc
+/.rpm/systemd
+
+# Packages
+
+/releases
