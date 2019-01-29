@@ -7,10 +7,9 @@ extern crate lazy_static;
 
 mod cli;
 mod config;
-mod handler;
 mod logger;
 mod signal;
-mod watcher;
+mod thread;
 
 use std::{io::Error, sync::mpsc};
 
@@ -25,8 +24,8 @@ fn main() -> Result<(), Error> {
     for (i, _) in config::OPTS.entries.iter().enumerate() {
         let (shared_tx, shared_rx) = mpsc::channel();
 
-        watcher::spawn(i, shared_tx.clone());
-        handler::spawn(i, shared_rx);
+        thread::watcher::spawn(i, shared_tx.clone());
+        thread::handler::spawn(i, shared_rx);
     }
 
     if config::OPTS.verbose {
