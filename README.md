@@ -37,7 +37,7 @@ The `.rpm` file will be in the `./releases` directory.
 [Build](#build-on-debian) it first, then:
 
 ```
-dpkg -i ./target/debian/watchd....deb
+dpkg -i ./releases/watchd....deb
 ```
 
 ### Install on RHEL
@@ -45,7 +45,7 @@ dpkg -i ./target/debian/watchd....deb
 [Build](#build-on-rhel) it first, then:
 
 ```
-rpm -i ./target/release/rpmbuild/RPMS/x86_64/watchd....rpm
+rpm -i ./releases/watchd....rpm
 ```
 
 ## Configuration
