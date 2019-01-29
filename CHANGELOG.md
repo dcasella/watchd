@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Rename `interval` option to `delay` to better deliver its meaning
+- Rename `interval` option to `delay` to better convey its meaning
 
 ## [0.1.3] - 2019-01-28
 
