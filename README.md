@@ -10,14 +10,14 @@ Install a Rust toolchain with Cargo.
 
 ### Build on Debian
 
-Install and run `cargo-deb`:
+Install `cargo-deb` and use the Makefile:
 
 ```
 cargo install cargo-deb
-cargo deb
+make deb
 ```
 
-The `.deb` file will be in the `./target/debian` directory.
+The `.deb` file will be in the `./releases` directory.
 
 ### Build on RHEL
 
@@ -28,7 +28,7 @@ cargo install cargo-rpm
 make rpm
 ```
 
-The `.rpm` file will be in the `./target/release/rpmbuild/RPMS/x86_64` directory.
+The `.rpm` file will be in the `./releases` directory.
 
 ## Install
 
