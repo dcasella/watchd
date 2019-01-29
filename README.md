@@ -25,7 +25,7 @@ Install `cargo-rpm` and use the Makefile:
 
 ```
 cargo install cargo-rpm
-make rpmbuild
+make rpm
 ```
 
 The `.rpm` file will be in the `./target/release/rpmbuild/RPMS/x86_64` directory.
