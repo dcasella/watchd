@@ -6,7 +6,7 @@ struct Pending {
     loop_break: bool
 }
 
-pub fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) {
+pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) -> thread::JoinHandle<()> {
     // generate thread name for logging purposes
     let thread_name = format!("handler-{}", &entry_path.to_string_lossy());
 
@@ -107,7 +107,7 @@ pub fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) {
                 }
             }
         })
-        .expect("Could not spawn handler thread");
+        .expect("Could not spawn handler thread")
 }
 
 fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<String>) -> Pending {

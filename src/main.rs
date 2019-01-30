@@ -11,7 +11,8 @@ mod logger;
 mod signal;
 mod watcher;
 
-use std::{io::Error, sync::mpsc};
+use std::io::Error;
+use watcher::Watcher;
 
 fn main() -> Result<(), Error> {
     info!(
@@ -22,10 +23,7 @@ fn main() -> Result<(), Error> {
     // for each entry, instantiate a shared channel such that the watcher thread
     // writes to `shared_tx` while the handler thread read from `shared_rx`
     for entry_path in config::OPTS.entries.keys() {
-        let (shared_tx, shared_rx) = mpsc::channel();
-
-        watcher::spawn(entry_path.to_owned(), shared_tx.clone());
-        watcher::handler::spawn(entry_path.to_owned(), shared_rx);
+        let _ = Watcher::new(entry_path.clone());
     }
 
     if config::OPTS.verbose {

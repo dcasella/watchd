@@ -1,7 +1,7 @@
 pub mod handler;
 
 use crate::{config, logger};
-use notify::{DebouncedEvent, RecursiveMode, Watcher};
+use notify::{DebouncedEvent, RecursiveMode, Watcher as WatcherTrait};
 use std::{
     path::PathBuf,
     sync::mpsc::{channel, Sender},
@@ -9,12 +9,30 @@ use std::{
     time::Duration
 };
 
-pub fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) {
+pub struct Watcher {
+    pub entry_path: PathBuf,
+    _watcher_thread: thread::JoinHandle<()>,
+    _handler_thread: thread::JoinHandle<()>
+}
+
+impl Watcher {
+    pub fn new(entry_path: PathBuf) -> Self {
+        let (shared_tx, shared_rx) = channel();
+
+        Self {
+            entry_path: entry_path.to_owned(),
+            _watcher_thread: self::spawn(entry_path.to_owned(), shared_tx),
+            _handler_thread: handler::spawn(entry_path.to_owned(), shared_rx)
+        }
+    }
+}
+
+fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) -> thread::JoinHandle<()> {
     // generate thread name for logging purposes
     let thread_name = format!("watcher-{}", &entry_path.to_string_lossy());
 
     thread::Builder::new()
-        .name(thread_name.clone())
+        .name(thread_name.to_owned())
         .spawn(move || {
             // thread event channels
             let (tx, rx) = channel();
@@ -37,7 +55,7 @@ pub fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) {
 
             // instantiate thread-local logger
             let thread_log = logger::ROOT.new(o!(
-                "thread" => thread_name.clone(),
+                "thread" => thread_name,
                 "id" => format!("{}", &entry_path.to_string_lossy())
             ));
 
@@ -131,5 +149,5 @@ pub fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) {
                 }
             }
         })
-        .expect("Could not spawn watcher thread");
+        .expect("Could not spawn watcher thread")
 }
