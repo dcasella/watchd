@@ -1,3 +1,5 @@
+pub mod handler;
+
 use crate::{config, logger};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
 use std::{sync::mpsc, thread, time::Duration};

@@ -9,7 +9,7 @@ mod cli;
 mod config;
 mod logger;
 mod signal;
-mod thread;
+mod watcher;
 
 use std::{io::Error, sync::mpsc};
 
@@ -24,8 +24,8 @@ fn main() -> Result<(), Error> {
     for (i, _) in config::OPTS.entries.iter().enumerate() {
         let (shared_tx, shared_rx) = mpsc::channel();
 
-        thread::watcher::spawn(i, shared_tx.clone());
-        thread::handler::spawn(i, shared_rx);
+        watcher::spawn(i, shared_tx.clone());
+        watcher::handler::spawn(i, shared_rx);
     }
 
     if config::OPTS.verbose {
