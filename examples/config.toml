@@ -10,7 +10,6 @@ command = [
 
 [[entry]]
 path = "src"
-delay = 0
 command = [
 	"printf 'src'"
 ]
