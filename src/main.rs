@@ -20,11 +20,12 @@ fn main() -> Result<(), Error> {
         "status" => "started"
     );
 
-    // for each entry, instantiate a shared channel such that the watcher thread
-    // writes to `shared_tx` while the handler thread read from `shared_rx`
-    for entry_path in config::OPTS.entries.keys() {
-        let _ = Watcher::new(entry_path.clone());
-    }
+    // for each entry, instantiate a Watcher
+    let watchers: Vec<Watcher> = config::OPTS
+        .entries
+        .keys()
+        .map(|entry_path| Watcher::new(entry_path.clone()))
+        .collect();
 
     if config::OPTS.verbose {
         info!(
@@ -35,5 +36,5 @@ fn main() -> Result<(), Error> {
     }
 
     // main loop signal handling
-    signal::handle()
+    signal::Handler::new(watchers).handle()
 }
