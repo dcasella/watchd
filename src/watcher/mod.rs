@@ -2,9 +2,14 @@ pub mod handler;
 
 use crate::{config, logger};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use std::{path::PathBuf, sync::mpsc, thread, time::Duration};
+use std::{
+    path::PathBuf,
+    sync::mpsc::{channel, Sender},
+    thread,
+    time::Duration
+};
 
-pub fn spawn(entry_path: PathBuf, shared_tx: mpsc::Sender<String>) {
+pub fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) {
     // generate thread name for logging purposes
     let thread_name = format!("watcher-{}", &entry_path.to_string_lossy());
 
@@ -12,7 +17,7 @@ pub fn spawn(entry_path: PathBuf, shared_tx: mpsc::Sender<String>) {
         .name(thread_name.clone())
         .spawn(move || {
             // thread event channels
-            let (tx, rx) = mpsc::channel();
+            let (tx, rx) = channel();
 
             // debounced (10ms) events watcher
             let mut watcher = notify::watcher(tx, Duration::from_millis(10)).unwrap();
