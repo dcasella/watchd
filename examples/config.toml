@@ -5,14 +5,14 @@ path = "examples"
 delay = 5
 exclude = ["^.*\\.sw(?:p|x|px)$"]
 command = [
-    "echo 'examples' >&2"
+    "printf 'examples' >&2"
 ]
 
 [[entry]]
 path = "src"
 delay = 0
 command = [
-	"echo 'src'"
+	"printf 'src'"
 ]
 
 [[entry]]
@@ -21,5 +21,5 @@ recursive = true
 delay = 9
 exclude = ["^\\."]
 command = [
-	"echo 'target'"
+	"printf 'target'"
 ]
