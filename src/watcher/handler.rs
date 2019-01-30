@@ -1,30 +1,25 @@
 use crate::{config, logger};
-use std::{process::Command, str, sync::mpsc::Receiver, thread, time::Duration};
+use std::{path::PathBuf, process::Command, str, sync::mpsc::Receiver, thread, time::Duration};
 
 struct Pending {
     command: bool,
     loop_break: bool
 }
 
-pub fn spawn(index: usize, shared_rx: Receiver<usize>) {
+pub fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) {
     // generate thread name for logging purposes
-    let thread_name = format!("handler-{}", index);
+    let thread_name = format!("handler-{}", &entry_path.to_string_lossy());
 
     thread::Builder::new()
         .name(thread_name.clone())
         .spawn(move || {
             let thread_log = logger::ROOT.new(o!(
                 "thread" => thread_name,
-                "id" => index
+                "id" => format!("{}", &entry_path.to_string_lossy())
             ));
 
             if config::OPTS.verbose {
-                if let Some(path) = &config::OPTS.entries[index].path.to_str() {
-                    info!(
-                        thread_log, "SPAWN";
-                        "entry-path" => path
-                    );
-                }
+                info!(thread_log, "SPAWN");
             }
 
             // if `init` is true, run the command first thing in the loop
@@ -47,12 +42,12 @@ pub fn spawn(index: usize, shared_rx: Receiver<usize>) {
                     loop {
                         // note that either `recv` or `recv_timeout` can update the value of
                         // `pending.command`
-                        pending = if config::OPTS.entries[index].delay == 0.0 {
+                        pending = if config::OPTS.entries[&entry_path].delay == 0.0 {
                             // handle null `delay`
                             self::recv(&thread_log, &shared_rx)
                         }
                         else {
-                            self::recv_timeout(&thread_log, &shared_rx, pending.command, index)
+                            self::recv_timeout(&thread_log, &shared_rx, pending.command, &entry_path)
                         };
 
                         if pending.loop_break {
@@ -70,12 +65,12 @@ pub fn spawn(index: usize, shared_rx: Receiver<usize>) {
                         info!(
                             thread_log, "RUN";
                             "mode" => "dry",
-                            "commands" => format!("{:?}", config::OPTS.entries[index].commands)
+                            "commands" => format!("{:?}", config::OPTS.entries[&entry_path].commands)
                         );
                     }
                     // execute the commands with `sh -c ...`
                     else {
-                        for command in &config::OPTS.entries[index].commands {
+                        for command in &config::OPTS.entries[&entry_path].commands {
                             info!(
                                 thread_log, "RUN";
                                 "command" => command
@@ -115,7 +110,7 @@ pub fn spawn(index: usize, shared_rx: Receiver<usize>) {
         .expect("Could not spawn handler thread");
 }
 
-fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<usize>) -> Pending {
+fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<String>) -> Pending {
     // received an event
     match shared_rx.recv() {
         Ok(_) => {
@@ -141,14 +136,14 @@ fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<usize>) -> Pending {
 
 fn recv_timeout(
     thread_log: &slog::Logger,
-    shared_rx: &Receiver<usize>,
+    shared_rx: &Receiver<String>,
     pending_command: bool,
-    index: usize
+    entry_path: &PathBuf
 ) -> Pending {
     // received an event before timeout elapsed
     if shared_rx
         .recv_timeout(Duration::from_millis(
-            (config::OPTS.entries[index].delay * 1000_f64) as u64
+            (config::OPTS.entries[entry_path].delay * 1000_f64) as u64
         ))
         .is_ok()
     {

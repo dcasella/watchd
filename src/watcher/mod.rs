@@ -2,11 +2,11 @@ pub mod handler;
 
 use crate::{config, logger};
 use notify::{DebouncedEvent, RecursiveMode, Watcher};
-use std::{sync::mpsc, thread, time::Duration};
+use std::{path::PathBuf, sync::mpsc, thread, time::Duration};
 
-pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
+pub fn spawn(entry_path: PathBuf, shared_tx: mpsc::Sender<String>) {
     // generate thread name for logging purposes
-    let thread_name = format!("watcher-{}", index);
+    let thread_name = format!("watcher-{}", &entry_path.to_string_lossy());
 
     thread::Builder::new()
         .name(thread_name.clone())
@@ -20,8 +20,8 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
             // add entry `path` to the watcher
             watcher
                 .watch(
-                    &config::OPTS.entries[index].path,
-                    if config::OPTS.entries[index].recursive {
+                    &entry_path,
+                    if config::OPTS.entries[&entry_path].recursive {
                         RecursiveMode::Recursive
                     }
                     else {
@@ -33,16 +33,11 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
             // instantiate thread-local logger
             let thread_log = logger::ROOT.new(o!(
                 "thread" => thread_name.clone(),
-                "id" => index
+                "id" => format!("{}", &entry_path.to_string_lossy())
             ));
 
             if config::OPTS.verbose {
-                if let Some(path) = &config::OPTS.entries[index].path.to_str() {
-                    info!(
-                        thread_log, "SPAWN";
-                        "entry-path" => path
-                    );
-                }
+                info!(thread_log, "SPAWN");
             }
 
             // watch for events on `rx`
@@ -56,7 +51,7 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                         let path = path.to_str().expect("Could not parse path");
 
                         // test path against excludes
-                        for exclude in &config::OPTS.entries[index].excludes {
+                        for exclude in &config::OPTS.entries[&entry_path].excludes {
                             if exclude.is_match(path) {
                                 if config::OPTS.verbose {
                                     info!(
@@ -80,7 +75,7 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                         }
 
                         // forward event to the shared channel
-                        let _ = shared_tx.send(index);
+                        let _ = shared_tx.send(path.to_owned());
                     }
                     // multiple file operation
                     Ok(DebouncedEvent::Rename(path_from, path_to)) => {
@@ -88,7 +83,7 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                         let path_to = path_to.to_str().expect("Could not parse path_to");
 
                         // test both paths against excludes
-                        for exclude in &config::OPTS.entries[index].excludes {
+                        for exclude in &config::OPTS.entries[&entry_path].excludes {
                             if exclude.is_match(path_from) || exclude.is_match(path_to) {
                                 if config::OPTS.verbose {
                                     info!(
@@ -112,7 +107,8 @@ pub fn spawn(index: usize, shared_tx: mpsc::Sender<usize>) {
                         );
 
                         // forward event to the shared channel
-                        let _ = shared_tx.send(index);
+                        let _ = shared_tx.send(path_from.to_owned());
+                        let _ = shared_tx.send(path_to.to_owned());
                     }
                     // death
                     Err(err) => {

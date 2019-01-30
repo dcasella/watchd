@@ -1,6 +1,6 @@
 use crate::cli;
 use regex::Regex;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 lazy_static! {
     // configuration options
@@ -13,7 +13,7 @@ pub struct Config {
     pub dry_run: bool,
     pub init: bool,
     pub verbose: bool,
-    pub entries: Vec<Entry>
+    pub entries: HashMap<PathBuf, Entry>
 }
 
 impl Config {
@@ -28,14 +28,29 @@ impl Config {
             dry_run: options.dry_run || config_toml.dry_run.unwrap_or_default(),
             init: options.init || config_toml.init.unwrap_or_default(),
             verbose: options.verbose || config_toml.verbose.unwrap_or_default(),
-            entries: config_toml.entries.iter().map(Entry::from).collect()
+            entries: config_toml
+                .entries
+                .iter()
+                .map(|entry_toml| {
+                    // map EntryFromToml to (PathBuf, Entry)
+                    (
+                        // ensure `path` exists
+                        if entry_toml.path.exists() {
+                            entry_toml.path.to_owned()
+                        }
+                        else {
+                            panic!("No such file or directory {:#?}", entry_toml.path);
+                        },
+                        Entry::from(entry_toml)
+                    )
+                })
+                .collect()
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Entry {
-    pub path: PathBuf,
     pub recursive: bool,
     pub delay: f64,
     pub excludes: Vec<Regex>,
@@ -46,13 +61,6 @@ impl Entry {
     // convert EntryFromToml to Entry
     fn from(entry_toml: &EntryFromToml) -> Self {
         Self {
-            // ensure `path` exists
-            path: if entry_toml.path.exists() {
-                entry_toml.path.to_owned()
-            }
-            else {
-                panic!("No such file or directory {:#?}", entry_toml.path);
-            },
             recursive: entry_toml.recursive.unwrap_or_default(),
             // ensure `delay` is not negative
             delay: match entry_toml.delay {
