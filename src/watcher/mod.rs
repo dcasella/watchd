@@ -68,7 +68,7 @@ fn spawn(
             watcher
                 .watch(
                     &entry_path,
-                    if config::OPTS.entries[&entry_path].recursive {
+                    if config::OPTS.read().unwrap().entries[&entry_path].recursive {
                         RecursiveMode::Recursive
                     }
                     else {
@@ -83,7 +83,7 @@ fn spawn(
                 "id" => format!("{}", &entry_path.to_string_lossy())
             ));
 
-            if config::OPTS.verbose {
+            if config::OPTS.read().unwrap().verbose {
                 info!(thread_log, "SPAWN");
             }
 
@@ -105,9 +105,9 @@ fn spawn(
                         let path = path.to_str().expect("Could not parse path");
 
                         // test path against excludes
-                        for exclude in &config::OPTS.entries[&entry_path].excludes {
+                        for exclude in &config::OPTS.read().unwrap().entries[&entry_path].excludes {
                             if exclude.is_match(path) {
-                                if config::OPTS.verbose {
+                                if config::OPTS.read().unwrap().verbose {
                                     info!(
                                         thread_log, "EVENT";
                                         "exclude" => true,
@@ -121,7 +121,7 @@ fn spawn(
                             }
                         }
 
-                        if config::OPTS.verbose {
+                        if config::OPTS.read().unwrap().verbose {
                             info!(
                                 thread_log, "EVENT";
                                 "path" => path
@@ -137,9 +137,9 @@ fn spawn(
                         let path_to = path_to.to_str().expect("Could not parse path_to");
 
                         // test both paths against excludes
-                        for exclude in &config::OPTS.entries[&entry_path].excludes {
+                        for exclude in &config::OPTS.read().unwrap().entries[&entry_path].excludes {
                             if exclude.is_match(path_from) || exclude.is_match(path_to) {
-                                if config::OPTS.verbose {
+                                if config::OPTS.read().unwrap().verbose {
                                     info!(
                                         thread_log, "EVENT";
                                         "exclude" => true,

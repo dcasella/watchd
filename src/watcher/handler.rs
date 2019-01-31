@@ -27,18 +27,18 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread
                 "id" => format!("{}", &entry_path.to_string_lossy())
             ));
 
-            if config::OPTS.verbose {
+            if config::OPTS.read().unwrap().verbose {
                 info!(thread_log, "SPAWN");
             }
 
             // if `init` is true, run the command first thing in the loop
             let mut pending = Pending {
-                command: config::OPTS.init,
+                command: config::OPTS.read().unwrap().init,
                 loop_break: false,
                 terminate: false
             };
 
-            if config::OPTS.verbose && pending.command {
+            if config::OPTS.read().unwrap().verbose && pending.command {
                 info!(
                     thread_log, "INIT";
                     "sync" => true
@@ -51,7 +51,7 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread
                     loop {
                         // note that either `recv` or `recv_timeout` can update the value of
                         // `pending.command`
-                        pending = if config::OPTS.entries[&entry_path].delay == 0.0 {
+                        pending = if config::OPTS.read().unwrap().entries[&entry_path].delay == 0.0 {
                             // handle null `delay`
                             self::recv(&thread_log, &shared_rx)
                         }
@@ -77,16 +77,16 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread
 
                 if pending.command {
                     // log the commands
-                    if config::OPTS.dry_run {
+                    if config::OPTS.read().unwrap().dry_run {
                         info!(
                             thread_log, "RUN";
                             "mode" => "dry",
-                            "commands" => format!("{:?}", config::OPTS.entries[&entry_path].commands)
+                            "commands" => format!("{:?}", config::OPTS.read().unwrap().entries[&entry_path].commands)
                         );
                     }
                     // execute the commands with `sh -c ...`
                     else {
-                        for command in &config::OPTS.entries[&entry_path].commands {
+                        for command in &config::OPTS.read().unwrap().entries[&entry_path].commands {
                             info!(
                                 thread_log, "RUN";
                                 "command" => command
@@ -98,7 +98,7 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread
                                 .output()
                                 .expect("Error while executing command");
 
-                            if config::OPTS.verbose {
+                            if config::OPTS.read().unwrap().verbose {
                                 info!(
                                     thread_log, "OUTPUT";
                                     "stdout" => match str::from_utf8(&output.stdout) {
@@ -167,7 +167,7 @@ fn recv_timeout(
 ) -> Pending {
     // received an event before timeout elapsed
     match shared_rx.recv_timeout(Duration::from_millis(
-        (config::OPTS.entries[entry_path].delay * 1000_f64) as u64
+        (config::OPTS.read().unwrap().entries[entry_path].delay * 1000_f64) as u64
     )) {
         // terminate
         Ok(Message::Terminate) => Pending {

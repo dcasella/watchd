@@ -7,7 +7,7 @@ use std::{fs::OpenOptions, path::PathBuf};
 
 lazy_static! {
     // root logger
-    pub static ref ROOT: Logger = self::new(&config::OPTS.log_file);
+    pub static ref ROOT: Logger = self::new(&config::OPTS.read().unwrap().log_file);
 }
 
 // create an asynchronous terminal drain

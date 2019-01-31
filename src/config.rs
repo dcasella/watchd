@@ -1,19 +1,19 @@
 use crate::cli;
 use regex::Regex;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::RwLock};
 
 lazy_static! {
     // configuration options
-    pub static ref OPTS: Config = Config::from(cli::Options::load());
+    pub static ref OPTS: RwLock<Config> = RwLock::new(Config::from(cli::Options::load()));
 }
 
-#[derive(Debug)]
 pub struct Config {
     pub log_file: Option<PathBuf>,
     pub dry_run: bool,
     pub init: bool,
     pub verbose: bool,
-    pub entries: HashMap<PathBuf, Entry>
+    pub entries: HashMap<PathBuf, Entry>,
+    options: cli::Options
 }
 
 impl Config {
@@ -24,7 +24,7 @@ impl Config {
 
         // override file configuration with command line options
         Self {
-            log_file: options.log_file.or(config_toml.log_file),
+            log_file: options.log_file.to_owned().or(config_toml.log_file),
             dry_run: options.dry_run || config_toml.dry_run.unwrap_or_default(),
             init: options.init || config_toml.init.unwrap_or_default(),
             verbose: options.verbose || config_toml.verbose.unwrap_or_default(),
@@ -44,8 +44,37 @@ impl Config {
                         Entry::from(entry_toml)
                     )
                 })
-                .collect()
+                .collect(),
+            options
         }
+    }
+
+    pub fn reload(&mut self) {
+        // parse configuration file and command line options
+        let config_toml = ConfigFromToml::from(&self.options);
+
+        // override file configuration with command line options
+        self.log_file = self.options.log_file.to_owned().or(config_toml.log_file);
+        self.dry_run = self.options.dry_run || config_toml.dry_run.unwrap_or_default();
+        self.init = self.options.init || config_toml.init.unwrap_or_default();
+        self.verbose = self.options.verbose || config_toml.verbose.unwrap_or_default();
+        self.entries = config_toml
+            .entries
+            .iter()
+            .map(|entry_toml| {
+                // map EntryFromToml to (PathBuf, Entry)
+                (
+                    // ensure `path` exists
+                    if entry_toml.path.exists() {
+                        entry_toml.path.to_owned()
+                    }
+                    else {
+                        panic!("No such file or directory {:#?}", entry_toml.path);
+                    },
+                    Entry::from(entry_toml)
+                )
+            })
+            .collect();
     }
 }
 

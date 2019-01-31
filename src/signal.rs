@@ -25,7 +25,7 @@ impl Handler {
             match signal {
                 // exit program
                 SIGTERM | SIGINT | SIGQUIT => {
-                    if config::OPTS.verbose {
+                    if config::OPTS.read().unwrap().verbose {
                         info!(
                             logger::ROOT, "PROGRAM";
                             "status" => "exiting",

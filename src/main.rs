@@ -22,12 +22,14 @@ fn main() -> Result<(), Error> {
 
     // for each entry, instantiate a Watcher
     let watchers: Vec<Watcher> = config::OPTS
+        .read()
+        .unwrap()
         .entries
         .keys()
         .map(|entry_path| Watcher::new(entry_path.clone()))
         .collect();
 
-    if config::OPTS.verbose {
+    if config::OPTS.read().unwrap().verbose {
         info!(
             logger::ROOT, "BOOT";
             "watchers" => "started",
