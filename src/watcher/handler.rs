@@ -17,14 +17,14 @@ struct Pending {
 
 pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread::JoinHandle<()> {
     // generate thread name for logging purposes
-    let thread_name = format!("handler-{}", &entry_path.to_string_lossy());
+    let thread_name = format!("handler-{}", entry_path.display());
 
     thread::Builder::new()
         .name(thread_name.clone())
         .spawn(move || {
             let thread_log = logger::ROOT.new(o!(
                 "thread" => thread_name,
-                "id" => format!("{}", &entry_path.to_string_lossy())
+                "id" => format!("{}", entry_path.display())
             ));
 
             if config::OPTS.read().unwrap().verbose {

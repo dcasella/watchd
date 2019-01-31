@@ -56,7 +56,7 @@ fn spawn(
     rx: Receiver<DebouncedEvent>
 ) -> thread::JoinHandle<()> {
     // generate thread name for logging purposes
-    let thread_name = format!("watcher-{}", &entry_path.to_string_lossy());
+    let thread_name = format!("watcher-{}", entry_path.display());
 
     thread::Builder::new()
         .name(thread_name.to_owned())
@@ -80,7 +80,7 @@ fn spawn(
             // instantiate thread-local logger
             let thread_log = logger::ROOT.new(o!(
                 "thread" => thread_name,
-                "id" => format!("{}", &entry_path.to_string_lossy())
+                "id" => format!("{}", entry_path.display())
             ));
 
             if config::OPTS.read().unwrap().verbose {

@@ -39,7 +39,7 @@ impl Config {
                             entry_toml.path.to_owned()
                         }
                         else {
-                            panic!("No such file or directory {:#?}", entry_toml.path);
+                            panic!("No such file or directory {}", entry_toml.path.display());
                         },
                         Entry::from(entry_toml)
                     )
