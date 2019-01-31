@@ -1,6 +1,6 @@
 [package]
 name = "watchd"
-version = "0.1.4"
+version = "0.2.0"
 authors = ["Davide Casella <dcasella@libgcc.so>"]
 edition = "2018"
 description = "A fearlessly concurrent filesystem watcher daemon"
