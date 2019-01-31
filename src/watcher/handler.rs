@@ -1,12 +1,21 @@
+use super::Message;
 use crate::{config, logger};
-use std::{path::PathBuf, process::Command, str, sync::mpsc::Receiver, thread, time::Duration};
+use std::{
+    path::PathBuf,
+    process::Command,
+    str,
+    sync::mpsc::{Receiver, RecvTimeoutError},
+    thread,
+    time::Duration
+};
 
 struct Pending {
     command: bool,
-    loop_break: bool
+    loop_break: bool,
+    terminate: bool
 }
 
-pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) -> thread::JoinHandle<()> {
+pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread::JoinHandle<()> {
     // generate thread name for logging purposes
     let thread_name = format!("handler-{}", &entry_path.to_string_lossy());
 
@@ -25,7 +34,8 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) -> thread:
             // if `init` is true, run the command first thing in the loop
             let mut pending = Pending {
                 command: config::OPTS.init,
-                loop_break: false
+                loop_break: false,
+                terminate: false
             };
 
             if config::OPTS.verbose && pending.command {
@@ -35,10 +45,9 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) -> thread:
                 );
             }
 
-            // thread loop
-            loop {
+            // watch for events on `shared_rx`
+            'thread_loop: loop {
                 if !pending.command {
-                    // watch for events on `shared_rx`
                     loop {
                         // note that either `recv` or `recv_timeout` can update the value of
                         // `pending.command`
@@ -49,6 +58,13 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) -> thread:
                         else {
                             self::recv_timeout(&thread_log, &shared_rx, pending.command, &entry_path)
                         };
+
+                        if pending.terminate {
+                            info!(thread_log, "TERMINATE");
+
+                            // break out of the thread loop
+                            break 'thread_loop;
+                        }
 
                         if pending.loop_break {
                             // break out of the watch loop:
@@ -110,18 +126,27 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<String>) -> thread:
         .expect("Could not spawn handler thread")
 }
 
-fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<String>) -> Pending {
+fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<Message>) -> Pending {
     // received an event
     match shared_rx.recv() {
-        Ok(_) => {
+        // terminate
+        Ok(Message::Terminate) => Pending {
+            command: false,
+            loop_break: false,
+            terminate: true
+        },
+        // watcher event
+        Ok(Message::Path(_)) => {
             info!(thread_log, "EVENT");
 
             // notify that a command execution is pending
             Pending {
                 command: true,
-                loop_break: true
+                loop_break: true,
+                terminate: false
             }
         }
+        // death, for real
         Err(err) => {
             crit!(
                 thread_log, "EVENT";
@@ -136,30 +161,46 @@ fn recv(thread_log: &slog::Logger, shared_rx: &Receiver<String>) -> Pending {
 
 fn recv_timeout(
     thread_log: &slog::Logger,
-    shared_rx: &Receiver<String>,
+    shared_rx: &Receiver<Message>,
     pending_command: bool,
     entry_path: &PathBuf
 ) -> Pending {
     // received an event before timeout elapsed
-    if shared_rx
-        .recv_timeout(Duration::from_millis(
-            (config::OPTS.entries[entry_path].delay * 1000_f64) as u64
-        ))
-        .is_ok()
-    {
-        info!(thread_log, "EVENT");
+    match shared_rx.recv_timeout(Duration::from_millis(
+        (config::OPTS.entries[entry_path].delay * 1000_f64) as u64
+    )) {
+        // terminate
+        Ok(Message::Terminate) => Pending {
+            command: false,
+            loop_break: false,
+            terminate: true
+        },
+        // watcher event
+        Ok(Message::Path(_)) => {
+            info!(thread_log, "EVENT");
 
-        // notify that a command execution is pending
-        Pending {
-            command: true,
-            loop_break: false
+            // notify that a command execution is pending
+            Pending {
+                command: true,
+                loop_break: false,
+                terminate: false
+            }
         }
-    }
-    // no event received before timeout
-    else {
-        Pending {
+        // no event received before timeout
+        Err(RecvTimeoutError::Timeout) => Pending {
             command: pending_command,
-            loop_break: true
+            loop_break: true,
+            terminate: false
+        },
+        // death, for real
+        Err(err) => {
+            crit!(
+                thread_log, "EVENT";
+                "message" => err.to_string(),
+                "error" => true
+            );
+
+            panic!("Error while receiving event: {}", err)
         }
     }
 }

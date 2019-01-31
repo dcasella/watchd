@@ -3,14 +3,12 @@ use signal_hook::{iterator::Signals, SIGHUP, SIGINT, SIGQUIT, SIGTERM};
 use std::io::Error;
 
 pub struct Handler {
-    _watchers: Vec<Watcher>
+    watchers: Vec<Watcher>
 }
 
 impl Handler {
     pub fn new(watchers: Vec<Watcher>) -> Self {
-        Self {
-            _watchers: watchers
-        }
+        Self { watchers }
     }
 
     pub fn handle(&self) -> Result<(), Error> {
@@ -46,6 +44,7 @@ impl Handler {
                     );
 
                     // handle watchers
+                    // self.watchers.iter().for_each(|w| w.terminate());
                 }
                 _ => unreachable!()
             }

@@ -1,42 +1,66 @@
 pub mod handler;
 
 use crate::{config, logger};
-use notify::{DebouncedEvent, RecursiveMode, Watcher as WatcherTrait};
+use notify::{DebouncedEvent, Error, RecursiveMode, Watcher as WatcherTrait};
 use std::{
     path::PathBuf,
-    sync::mpsc::{channel, Sender},
+    sync::mpsc::{channel, Receiver, Sender},
     thread,
     time::Duration
 };
 
+pub enum Message {
+    Path(String),
+    Terminate
+}
+
 pub struct Watcher {
     pub entry_path: PathBuf,
     _watcher_thread: thread::JoinHandle<()>,
-    _handler_thread: thread::JoinHandle<()>
+    _handler_thread: thread::JoinHandle<()>,
+    shared_tx: Sender<Message>,
+    watcher_tx: Sender<DebouncedEvent>
 }
 
 impl Watcher {
     pub fn new(entry_path: PathBuf) -> Self {
         let (shared_tx, shared_rx) = channel();
+        let (watcher_tx, watcher_rx) = channel();
 
         Self {
             entry_path: entry_path.to_owned(),
-            _watcher_thread: self::spawn(entry_path.to_owned(), shared_tx),
-            _handler_thread: handler::spawn(entry_path.to_owned(), shared_rx)
+            _watcher_thread: self::spawn(
+                entry_path.to_owned(),
+                shared_tx.clone(),
+                watcher_tx.clone(),
+                watcher_rx
+            ),
+            _handler_thread: handler::spawn(entry_path.to_owned(), shared_rx),
+            shared_tx,
+            watcher_tx
         }
+    }
+
+    pub fn terminate(&self) {
+        let _ = self.shared_tx.send(Message::Terminate);
+        let _ = self
+            .watcher_tx
+            .send(DebouncedEvent::Error(Error::WatchNotFound, None));
     }
 }
 
-fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) -> thread::JoinHandle<()> {
+fn spawn(
+    entry_path: PathBuf,
+    shared_tx: Sender<Message>,
+    tx: Sender<DebouncedEvent>,
+    rx: Receiver<DebouncedEvent>
+) -> thread::JoinHandle<()> {
     // generate thread name for logging purposes
     let thread_name = format!("watcher-{}", &entry_path.to_string_lossy());
 
     thread::Builder::new()
         .name(thread_name.to_owned())
         .spawn(move || {
-            // thread event channels
-            let (tx, rx) = channel();
-
             // debounced (10ms) events watcher
             let mut watcher = notify::watcher(tx, Duration::from_millis(10)).unwrap();
 
@@ -66,6 +90,13 @@ fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) -> thread::JoinHandle<(
             // watch for events on `rx`
             'event_loop: loop {
                 match rx.recv() {
+                    // terminate
+                    Ok(DebouncedEvent::Error(Error::WatchNotFound, None)) => {
+                        info!(thread_log, "TERMINATE");
+
+                        // exit from thread
+                        break;
+                    }
                     // single file operation
                     Ok(DebouncedEvent::Create(path))
                     | Ok(DebouncedEvent::Write(path))
@@ -98,7 +129,7 @@ fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) -> thread::JoinHandle<(
                         }
 
                         // forward event to the shared channel
-                        let _ = shared_tx.send(path.to_owned());
+                        let _ = shared_tx.send(Message::Path(path.to_owned()));
                     }
                     // multiple file operation
                     Ok(DebouncedEvent::Rename(path_from, path_to)) => {
@@ -130,8 +161,8 @@ fn spawn(entry_path: PathBuf, shared_tx: Sender<String>) -> thread::JoinHandle<(
                         );
 
                         // forward event to the shared channel
-                        let _ = shared_tx.send(path_from.to_owned());
-                        let _ = shared_tx.send(path_to.to_owned());
+                        let _ = shared_tx.send(Message::Path(path_from.to_owned()));
+                        let _ = shared_tx.send(Message::Path(path_to.to_owned()));
                     }
                     // death
                     Err(err) => {
