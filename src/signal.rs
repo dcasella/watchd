@@ -7,11 +7,22 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn new(watchers: Vec<Watcher>) -> Self {
+    pub fn new() -> Self {
+        // for each entry, instantiate a Watcher
+        let watchers: Vec<Watcher> = watchers();
+
+        if config::OPTS.read().unwrap().verbose {
+            info!(
+                logger::ROOT, "BOOT";
+                "watchers" => "started",
+                "handlers" => "started"
+            );
+        }
+
         Self { watchers }
     }
 
-    pub fn handle(&self) -> Result<(), Error> {
+    pub fn handle(&mut self) -> Result<(), Error> {
         let signals = Signals::new(&[
             SIGHUP,  // 1
             SIGINT,  // 2
@@ -37,14 +48,14 @@ impl Handler {
                 }
                 // reload configuration
                 SIGHUP => {
-                    warn!(
-                        logger::ROOT, "PROGRAM (UNIMPLEMENTED)";
-                        "status" => "reloading",
+                    info!(
+                        logger::ROOT, "RELOAD";
+                        "status" => "starting",
                         "signal" => signal
                     );
 
-                    // handle watchers
-                    // self.watchers.iter().for_each(|w| w.terminate());
+                    // handle reload
+                    self.reload();
                 }
                 _ => unreachable!()
             }
@@ -57,4 +68,38 @@ impl Handler {
 
         Ok(())
     }
+
+    fn reload(&mut self) {
+        // terminate watchers; this is required to acquire a WriteLock
+        for watcher in &self.watchers {
+            watcher.terminate();
+        }
+
+        // acquire WriteLock
+        if config::OPTS.write().unwrap().reload().is_ok() {
+            // deploy new watchers
+            self.watchers = watchers();
+        }
+        else {
+            // redeploy the previous configuration's watchers
+            for watcher in self.watchers.iter_mut() {
+                watcher.restart();
+            }
+        }
+
+        error!(
+            logger::ROOT, "RELOAD";
+            "status" => "failed"
+        );
+    }
+}
+
+fn watchers() -> Vec<Watcher> {
+    config::OPTS
+        .read()
+        .unwrap()
+        .entries
+        .keys()
+        .map(|entry_path| Watcher::new(entry_path.clone()))
+        .collect()
 }

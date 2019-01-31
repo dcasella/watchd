@@ -16,6 +16,10 @@ pub enum Message {
 
 pub struct Watcher {
     pub entry_path: PathBuf,
+    data: WatcherData
+}
+
+struct WatcherData {
     _watcher_thread: thread::JoinHandle<()>,
     _handler_thread: thread::JoinHandle<()>,
     shared_tx: Sender<Message>,
@@ -24,28 +28,41 @@ pub struct Watcher {
 
 impl Watcher {
     pub fn new(entry_path: PathBuf) -> Self {
+        Self {
+            entry_path: entry_path.to_owned(),
+            data: self::WatcherData::new(&entry_path)
+        }
+    }
+
+    pub fn restart(&mut self) {
+        self.data = self::WatcherData::new(&self.entry_path);
+    }
+
+    pub fn terminate(&self) {
+        let _ = self.data.shared_tx.send(Message::Terminate);
+        let _ = self
+            .data
+            .watcher_tx
+            .send(DebouncedEvent::Error(Error::WatchNotFound, None));
+    }
+}
+
+impl WatcherData {
+    fn new(entry_path: &PathBuf) -> Self {
         let (shared_tx, shared_rx) = channel();
         let (watcher_tx, watcher_rx) = channel();
 
         Self {
-            entry_path: entry_path.to_owned(),
             _watcher_thread: self::spawn(
                 entry_path.to_owned(),
                 shared_tx.clone(),
                 watcher_tx.clone(),
                 watcher_rx
             ),
-            _handler_thread: handler::spawn(entry_path.to_owned(), shared_rx),
+            _handler_thread: handler::spawn(entry_path.to_owned(), true, shared_rx),
             shared_tx,
             watcher_tx
         }
-    }
-
-    pub fn terminate(&self) {
-        let _ = self.shared_tx.send(Message::Terminate);
-        let _ = self
-            .watcher_tx
-            .send(DebouncedEvent::Error(Error::WatchNotFound, None));
     }
 }
 

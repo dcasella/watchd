@@ -15,7 +15,11 @@ struct Pending {
     terminate: bool
 }
 
-pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread::JoinHandle<()> {
+pub(super) fn spawn(
+    entry_path: PathBuf,
+    try_init: bool,
+    shared_rx: Receiver<Message>
+) -> thread::JoinHandle<()> {
     // generate thread name for logging purposes
     let thread_name = format!("handler-{}", entry_path.display());
 
@@ -31,9 +35,10 @@ pub(super) fn spawn(entry_path: PathBuf, shared_rx: Receiver<Message>) -> thread
                 info!(thread_log, "SPAWN");
             }
 
-            // if `init` is true, run the command first thing in the loop
+            // if `try_init` and `init` are true, run the command first thing in the loop
+            // (`try_init` is true only when this function is called by Watcher::new)
             let mut pending = Pending {
-                command: config::OPTS.read().unwrap().init,
+                command: try_init && config::OPTS.read().unwrap().init,
                 loop_break: false,
                 terminate: false
             };

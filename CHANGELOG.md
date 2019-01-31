@@ -9,9 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Configuration reload via SIHUP
+
 ### Changed
 
-- Handle and index watchers with keys instead of indices.
+- Handle and index watchers with keys instead of indices
+- General code structure "improvements"
 
 ## [0.1.4] - 2019-01-29
 

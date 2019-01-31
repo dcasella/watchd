@@ -12,7 +12,6 @@ mod signal;
 mod watcher;
 
 use std::io::Error;
-use watcher::Watcher;
 
 fn main() -> Result<(), Error> {
     info!(
@@ -20,23 +19,6 @@ fn main() -> Result<(), Error> {
         "status" => "started"
     );
 
-    // for each entry, instantiate a Watcher
-    let watchers: Vec<Watcher> = config::OPTS
-        .read()
-        .unwrap()
-        .entries
-        .keys()
-        .map(|entry_path| Watcher::new(entry_path.clone()))
-        .collect();
-
-    if config::OPTS.read().unwrap().verbose {
-        info!(
-            logger::ROOT, "BOOT";
-            "watchers" => "started",
-            "handlers" => "started"
-        );
-    }
-
     // main loop signal handling
-    signal::Handler::new(watchers).handle()
+    signal::Handler::new().handle()
 }
