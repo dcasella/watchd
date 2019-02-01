@@ -30,12 +30,12 @@ impl Watcher {
     pub fn new(entry_path: PathBuf) -> Self {
         Self {
             entry_path: entry_path.to_owned(),
-            data: self::WatcherData::new(&entry_path)
+            data: self::WatcherData::new(&entry_path, true)
         }
     }
 
     pub fn restart(&mut self) {
-        self.data = self::WatcherData::new(&self.entry_path);
+        self.data = self::WatcherData::new(&self.entry_path, false);
     }
 
     pub fn terminate(&self) {
@@ -48,7 +48,7 @@ impl Watcher {
 }
 
 impl WatcherData {
-    fn new(entry_path: &PathBuf) -> Self {
+    fn new(entry_path: &PathBuf, try_init: bool) -> Self {
         let (shared_tx, shared_rx) = channel();
         let (watcher_tx, watcher_rx) = channel();
 
@@ -59,7 +59,7 @@ impl WatcherData {
                 watcher_tx.clone(),
                 watcher_rx
             ),
-            _handler_thread: handler::spawn(entry_path.to_owned(), true, shared_rx),
+            _handler_thread: handler::spawn(entry_path.to_owned(), try_init, shared_rx),
             shared_tx,
             watcher_tx
         }

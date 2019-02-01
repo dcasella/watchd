@@ -77,20 +77,25 @@ impl Handler {
 
         // acquire WriteLock
         if config::OPTS.write().unwrap().reload().is_ok() {
+            info!(
+                logger::ROOT, "RELOAD";
+                "status" => "complete"
+            );
+
             // deploy new watchers
             self.watchers = watchers();
         }
         else {
+            error!(
+                logger::ROOT, "RELOAD";
+                "status" => "failed"
+            );
+
             // redeploy the previous configuration's watchers
             for watcher in self.watchers.iter_mut() {
                 watcher.restart();
             }
         }
-
-        error!(
-            logger::ROOT, "RELOAD";
-            "status" => "failed"
-        );
     }
 }
 
