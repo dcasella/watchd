@@ -7,6 +7,12 @@ lazy_static! {
     pub static ref OPTS: RwLock<Config> = RwLock::new(Config::from(cli::Options::load()));
 }
 
+pub enum Error {
+    Forbidden,
+    NotFound,
+    Invalid
+}
+
 pub struct Config {
     pub log_file: Option<PathBuf>,
     pub dry_run: bool,
@@ -49,10 +55,21 @@ impl Config {
         }
     }
 
-    pub fn reload(&mut self) -> Result<(), ()> {
+    pub fn reload(&mut self) -> Result<(), Error> {
         // parse configuration file and command line options
         match ConfigFromToml::reload_from(&self.options) {
             Ok(config_toml) => {
+                let log_file = self.options.log_file.to_owned().or(config_toml.log_file);
+
+                if self.log_file != log_file {
+                    error!(
+                        logger::ROOT, "RELOAD";
+                        "reason" => "You shall not change `log_path` without restarting"
+                    );
+
+                    return Err(Error::Forbidden);
+                }
+
                 let mut entries: HashMap<PathBuf, Entry> =
                     HashMap::with_capacity(config_toml.entries.len());
 
@@ -70,26 +87,24 @@ impl Config {
                                 "path" => entry_toml.path.display()
                             );
 
-                            return Err(());
+                            return Err(Error::NotFound);
                         },
                         match Entry::reload_from(&entry_toml) {
                             Ok(entry) => entry,
-                            Err(_) => return Err(())
+                            Err(err) => return Err(err)
                         }
                     );
                 }
 
-                self.log_file = self.options.log_file.to_owned().or(config_toml.log_file);
+                self.log_file = log_file;
                 self.dry_run = self.options.dry_run || config_toml.dry_run.unwrap_or_default();
                 self.init = self.options.init || config_toml.init.unwrap_or_default();
                 self.verbose = self.options.verbose || config_toml.verbose.unwrap_or_default();
                 self.entries = entries;
 
-                // TODO: update logger::ROOT log_file
-
                 Ok(())
             }
-            Err(_) => Err(())
+            Err(_) => Err(Error::Invalid)
         }
     }
 }
@@ -127,7 +142,7 @@ impl Entry {
         }
     }
 
-    fn reload_from(entry_toml: &EntryFromToml) -> Result<Self, ()> {
+    fn reload_from(entry_toml: &EntryFromToml) -> Result<Self, Error> {
         let mut excludes = vec![];
 
         for exclude in entry_toml.excludes.to_owned().unwrap_or_default() {
@@ -141,7 +156,7 @@ impl Entry {
                         "message" => err.to_string()
                     );
 
-                    return Err(());
+                    return Err(Error::Invalid);
                 }
             }
         }
@@ -158,7 +173,7 @@ impl Entry {
                         "value" => value
                     );
 
-                    return Err(());
+                    return Err(Error::Invalid);
                 }
                 None => f64::default()
             },
