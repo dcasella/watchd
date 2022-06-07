@@ -4,15 +4,19 @@ RPMDIR := .rpm
 release:
 	@cargo build --release
 
-deb-docker:
-	@docker build -t watchd-debian .build/debian
-	@docker run --rm -v ${PWD}:/source watchd-debian \
+deb-docker: deb-docker-build
+	@docker run --rm -it -v ${PWD}:/source watchd-debian \
 		make deb
 
-rpm-docker:
-	@docker build -t watchd-rhel .build/rhel
+deb-docker-build: .build/debian
+	@docker build -t watchd-debian .build/debian
+
+rpm-docker: rpm-docker-build
 	@docker run --rm -v ${PWD}:/source watchd-rhel \
 		make rpm
+
+rpm-docker-build: .build/rhel
+	@docker build -t watchd-rhel .build/rhel
 
 deb:
 	@cargo deb -v
